@@ -18,7 +18,7 @@ st.set_page_config(layout="wide")
 uploaded_files = st.sidebar.file_uploader('File uploader', accept_multiple_files=True, type=['txt'])
 
 # Get the polygons
-polys = gpd.read_file(r"C:\Users\santi\Dropbox (Remix)\Remix\Data Team\Data Analytics\Polygon cut lins\data\german data\to_geojson.geojson")
+polys = gpd.read_file("https://raw.githubusercontent.com/Bondify/km_per_polygon/main/data/polygons.geojson")
 polys = polys.to_crs(epsg=4326)
 
 # Upload files from GTFS
