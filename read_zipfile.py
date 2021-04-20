@@ -14,14 +14,14 @@ import itertools
 import base64
 
 st.set_page_config(layout="wide")
-
+st.sidebar.header('Upload files and close the sidebar')
 uploaded_files = st.sidebar.file_uploader('File uploader', accept_multiple_files=True, type=['txt'])
 
 # Get the polygons
 polys = gpd.read_file("https://raw.githubusercontent.com/Bondify/km_per_polygon/main/data/polygons.geojson")
 polys = polys.to_crs(epsg=4326)
 
-# Upload files from GTFS
+ # Upload files from GTFS
 if uploaded_files != []:
     for file in uploaded_files:
         name = file.name
@@ -83,48 +83,67 @@ if uploaded_files != []:
         index = ['route_short_name', 'service_id', 'poly_index'],
         aggfunc='sum'
     ).reset_index()    
-    
-    # Download data
-    def get_table_download_link(df):
-        """Generates a link allowing the data in a given panda dataframe to be downloaded
-        in:  dataframe
-        out: href string
-        """
-        csv = df.to_csv(index=False)
-        b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
-        href = f'<a href="data:file/csv;base64,{b64}">Download csv file</a>'
-        return href
-        
-    st.sidebar.markdown(get_table_download_link(intersection2), unsafe_allow_html=True)
-    
+            
     intersection2 = pd.merge(intersection2, polys, left_on='poly_index', right_on=polys.index, how='left')
+    intersection2.rename(columns = dict(
+        route_short_name = 'Route',
+        service_id = 'Service ID',
+        NAME = 'County'
+        ), inplace=True)
+    
     intersection3 = gpd.GeoDataFrame(data=intersection2.drop('geometry', axis=1), geometry=intersection2.geometry)
 
     # -------------------------------------------------------------------------------
     # --------------------------- APP -----------------------------------------------
     # -------------------------------------------------------------------------------
+    # LAYING OUT THE TOP SECTION OF THE APP
+    st.header("Bus kilometers per county")
+    # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
+    col1, col2, col3= st.beta_columns((1, 2 ,3))
+        
     # Select filters
-    filter_polys = st.sidebar.multiselect('Counties', list(intersection3['NAME'].unique()))
-    filter_routes = st.sidebar.multiselect('Routes', list(intersection3['route_short_name'].unique()))
+    poly_names_list = list(intersection3['County'].unique())
+    lines_names_list = list(intersection3['Route'].unique())
     
+    poly_names_list.sort()
+    lines_names_list.sort()
+    
+    with col1:
+        st.subheader('Filters')
+        filter_polys = st.multiselect('Counties', poly_names_list)
+        filter_routes = st.multiselect('Routes', lines_names_list)
+        st.subheader('Pivot dimensions')
+        group_by = st.multiselect('Group by', ['County', 'Route', 'Service ID'], default = ['County', 'Route'])
+        
     if filter_polys == []:
-        filter_polys = list(intersection3['NAME'].unique())
+        filter_polys = list(intersection3['County'].unique())
         
     if filter_routes == []:
-        filter_routes = list(intersection3['route_short_name'].unique())
+        filter_routes = list(intersection3['Route'].unique())
         
-    # Get the total_km per polygon for map styling
-    total_km_per_poly = intersection3.loc[intersection3.route_short_name.isin(filter_routes)].pivot_table(['total_km','total_miles'], index=['NAME'], aggfunc='sum').reset_index()
-    total_km_per_poly = pd.merge(total_km_per_poly, polys[['NAME', 'geometry']], how='left')
-    total_km_per_poly = gpd.GeoDataFrame(data=total_km_per_poly.drop('geometry', axis=1), geometry=total_km_per_poly.geometry)
+        
+    # # Get the total_km per polygon for map styling
+    # total_km_per_poly = intersection3.loc[intersection3.route_short_name.isin(filter_routes)].pivot_table(['total_km','total_miles'], index=['NAME'], aggfunc='sum').reset_index()
+    # total_km_per_poly = pd.merge(total_km_per_poly, polys[['NAME', 'geometry']], how='left')
+    # total_km_per_poly = gpd.GeoDataFrame(data=total_km_per_poly.drop('geometry', axis=1), geometry=total_km_per_poly.geometry)
     
-    # Calculate weigth for styling
-    total_km_per_poly['weight'] = total_km_per_poly.total_km/total_km_per_poly.total_km.max()
+    # # Calculate weigth for styling
+    # total_km_per_poly['weight'] = total_km_per_poly.total_km/total_km_per_poly.total_km.max()
     
-    # Filter the polygons that pass the filter for the map
-    filtered = total_km_per_poly.loc[total_km_per_poly['NAME'].isin(filter_polys)]
-    # Data for map
-    data_poly = filtered.__geo_interface__
+    # # Filter the polygons that pass the filter for the map
+    # filtered = total_km_per_poly.loc[total_km_per_poly['NAME'].isin(filter_polys)]
+    # # Data for map
+    # data_poly = filtered.__geo_interface__
+        
+    # # Calculate the center of the filter polygons
+    # avg_lon = total_km_per_poly.loc[total_km_per_poly['NAME'].isin(filter_polys), 'geometry'].centroid.x.mean()
+    # avg_lat = total_km_per_poly.loc[total_km_per_poly['NAME'].isin(filter_polys), 'geometry'].centroid.y.mean()
+        
+    # Filter polygons that passed the filter
+    filtered = intersection3.loc[
+        (intersection3['County'].isin(filter_polys))&
+        (intersection3.Route.isin(filter_routes))
+        ]
     
     # Filter line intersections that passed the filters
     line_intersections = intersection1.loc[
@@ -132,53 +151,71 @@ if uploaded_files != []:
         (intersection1.poly_index.isin(polys.loc[polys['NAME'].isin(filter_polys)].index.unique()))
         ].__geo_interface__
     
+    # Filter the shapes that passed the routes filters
+    aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
+    aux = pd.merge(aux, routes[['route_id', 'route_short_name']], how='left')
+    shapes_filtered = pd.merge(shapes ,aux, how='left')
+    shapes_filtered = gpd.GeoDataFrame(data = shapes_filtered.drop('geometry', axis=1), geometry=shapes_filtered.geometry)
+    shapes_filtered = shapes_filtered.loc[shapes_filtered.route_short_name.isin(filter_routes)]
+    
     # Calculate the center
-    avg_lon = total_km_per_poly.loc[total_km_per_poly['NAME'].isin(filter_polys), 'geometry'].centroid.x.mean()
-    avg_lat = total_km_per_poly.loc[total_km_per_poly['NAME'].isin(filter_polys), 'geometry'].centroid.y.mean()
+    avg_lon = polys.geometry.centroid.x.mean()
+    avg_lat = polys.geometry.centroid.y.mean()
     
     # Work for the datatable
-    # Filter data that pass the line filter and aggregate per poly and route
-    agg_line_filtered = intersection3.loc[intersection3.route_short_name.isin(filter_routes)].pivot_table(['total_km'], index=['NAME','route_short_name'], aggfunc='sum').reset_index()
-    
+    # Aggregate data as indicated in Pivot dimensions    
     # Filter data
-    table_poly = agg_line_filtered.loc[agg_line_filtered['NAME'].isin(filter_polys)]
-    
-    # LAYING OUT THE TOP SECTION OF THE APP
-    # row1 = st.beta_columns((5))
-    
-    st.title("Total bus km per Municipality")
+    table_poly = filtered.pivot_table(['total_km'], index=group_by, aggfunc='sum').reset_index()
+    table_poly['total_km'] = table_poly['total_km'].apply(lambda x: str(round(x, 2)))         
+
+    with col2:
+        st.subheader('Total km = {}'.format(round(filtered.total_km.sum(),1)))
+                    # Download data
+        def get_table_download_link(df):
+            """Generates a link allowing the data in a given panda dataframe to be downloaded
+            in:  dataframe
+            out: href string
+            """
+            csv = df.to_csv(index=False)
+            b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
+            href = f'<a href="data:file/csv;base64,{b64}">Download csv file</a>'
+            return href
         
-    # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
-    row2_1, row2_2= st.beta_columns((4,2))
-    
-    
-    with row2_1: 
+        st.dataframe(table_poly, 900, 600)
+        st.markdown(get_table_download_link(table_poly), unsafe_allow_html=True)
+        
+    with col3: 
         # CREATE THE MAP
-        st.write(pdk.Deck(
+        st.subheader('Map')
+        st.pydeck_chart(pdk.Deck(
             map_style="mapbox://styles/mapbox/light-v9",
             # api_keys =  MAPBOX_API_KEY,
             initial_view_state={
                 "latitude": avg_lat,
                 "longitude": avg_lon,
-                "zoom": 10,
+                "zoom": 11,
                 "pitch": 0,
+                "height":600,
             },
             layers = [
                 pdk.Layer(
                     "GeoJsonLayer", 
-                    data=data_poly, 
-                    get_fill_color='[properties.weight * 255, properties.weight * 255, 255]',
-                    get_line_color=[255, 255, 255],
-                    opacity=0.5,
+                    data=filtered, 
+                    # stroked = True,
+                    # filled = False,
+                    opacity=0.2,
+                    get_fill_color= [220, 230, 245],#[150, 150, 150], #'[properties.weight * 255, properties.weight * 255, 255]',#
+                    get_line_color= [255, 255, 255],
+                    get_line_width = 30,
                     pickable=False,
                     extruded=False,
                     converage=1
                     ),
                 pdk.Layer(
                     "GeoJsonLayer", 
-                    data=shapes, 
+                    data=shapes_filtered, 
                     # get_fill_color=[231,51,55],
-                    get_line_color=[0,0,0],
+                    get_line_color=[212, 174, 174],#[50,50,50],
                     opacity=.8,
                     pickable=False,
                     extruded=True,
@@ -194,7 +231,7 @@ if uploaded_files != []:
                     "GeoJsonLayer", 
                     data=line_intersections, 
                     # get_fill_color=[231,51,55],
-                    get_line_color=[231,51,55],
+                    get_line_color = [200,51,55],
                     opacity=1,
                     pickable=False,
                     extruded=False,
@@ -209,6 +246,3 @@ if uploaded_files != []:
                 ]
         ))
         
-    with row2_2:
-        st.write('Total km = {}'.format(round(filtered.total_km.sum(),1)))
-        st.table(table_poly)
