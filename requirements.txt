@@ -1,0 +1,6 @@
+geopandas==0.6.1
+pandas==1.2.4
+streamlit==0.79.0
+pydeck==0.6.1
+~hapely==1.6.4.post1
+Shapely==1.7.1
