@@ -30,15 +30,24 @@ if uploaded_files != []:
         if name=='routes.txt':
             routes = pd.read_csv(file)
             if len(routes.route_short_name.unique()) == 1:
-               routes['route_short_name'] = routes['route_long_name']
+                routes['route_short_name'] = routes['route_long_name']
+                
         elif name == 'trips.txt':
             trips = pd.read_csv(file)
+        elif name == 'stop_times.txt':
+            stop_times = pd.read_csv(file)  
         elif name == 'shapes.txt':
             aux = pd.read_csv(file)
             aux.sort_values(by=['shape_id', 'shape_pt_sequence'], ascending=True, inplace=True)
             aux = gpd.GeoDataFrame(data=aux[['shape_id']], geometry = gpd.points_from_xy(x = aux.shape_pt_lon, y=aux.shape_pt_lat))
             lines = [LineString(list(aux.loc[aux.shape_id==s, 'geometry']))  for s in aux.shape_id.unique()]
             shapes = gpd.GeoDataFrame(data=aux.shape_id.unique(), geometry = lines, columns = ['shape_id'])
+    
+    # I need the route_id in stop_times
+    stop_times = pd.merge(stop_times, trips, how='left')
+    
+    # I need the route_short_name in trips
+    trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
     
     # I need the intersection and also to keep the shape_id and poly_id or index
     # Get the intersection betwee each shape and each polygon
@@ -65,36 +74,102 @@ if uploaded_files != []:
     intersection['km_in_poly'] = intersection.geometry.to_crs(32632).length/1000
     intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
     
-    # Trips per shape and service_id
-    trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
+    # Get the patters with the same criteria as Remix
+    # Pattern A is the one with more trips
+    # If two patterns have the same number of trips, then the longer
     
-    trips_per_shape = trips.pivot_table('trip_id', index=['route_short_name','shape_id', 'service_id'], aggfunc='count').reset_index()
-    trips_per_shape.rename(columns=dict(trip_id='ntrips'), inplace=True)
+    # Number of trips per shape
+    trips_per_shape = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id'], aggfunc='count').reset_index()
+    trips_per_shape.rename(columns = dict(trip_id = 'ntrips'), inplace=True)
+    shapes.crs = {'init':'epsg:4326'}
+    shapes['length_m'] = shapes.geometry.to_crs(epsg=4326).length
     
-    # Merge the intersection with the number of trips per shape
-    intersection1 = pd.merge(trips_per_shape, intersection, how='right')
-    intersection1['total_km'] = intersection1['ntrips']*intersection1['km_in_poly']
-    intersection1['total_miles'] = intersection1['ntrips']*intersection1['miles_in_poly']
+    # Number of stops per shape
+    aux = pd.merge(stop_times[['route_id', 'stop_id', 'stop_sequence', 'trip_id']], trips[['trip_id', 'route_id', 'shape_id']], how='left')
+    aux = aux.drop_duplicates(subset=['route_id', 'shape_id', 'stop_sequence']).drop('trip_id', axis=1).sort_values(by=['route_id', 'shape_id', 'stop_sequence'], ascending=True)
+    stops_per_shape = aux.pivot_table('stop_sequence', index='shape_id', aggfunc='count').reset_index()
+    stops_per_shape.rename(columns = dict(stop_sequence = 'nstops'), inplace=True)
     
-    intersection1 = gpd.GeoDataFrame(data = intersection1.drop('geometry', axis=1), geometry = intersection1.geometry)
+    # Get all the variables I need to assign patterns in the same df
+    patterns = pd.merge(trips_per_shape, shapes.drop('geometry', axis=1), how='left').sort_values(by=['route_id', 'ntrips', 'length_m'], ascending=False)
+    patterns = pd.merge(patterns, stops_per_shape, how='left')
+    patterns = pd.merge(routes[['route_id', 'route_short_name']], patterns, how='left')
     
-    # Aggregate at the route level (we don't really care about the shape_id)
-    # The big downside with this is that we lose the geometry
-    intersection2 = intersection1.pivot_table(
-        ['total_km', 'km_in_poly','total_miles', 'miles_in_poly','ntrips'],
-        index = ['route_short_name', 'service_id', 'poly_index'],
-        aggfunc='sum'
-    ).reset_index()    
-            
-    intersection2 = pd.merge(intersection2, polys, left_on='poly_index', right_on=polys.index, how='left')
-    intersection2.rename(columns = dict(
-        route_short_name = 'Route',
-        service_id = 'Service ID',
-        NAME = 'County'
-        ), inplace=True)
+    # Manage directions
+    direction_0 = patterns.loc[patterns.direction_id == 0].reset_index().drop('index', axis=1)
+    direction_1 = patterns.loc[patterns.direction_id == 1].reset_index().drop('index', axis=1)
     
-    intersection3 = gpd.GeoDataFrame(data=intersection2.drop('geometry', axis=1), geometry=intersection2.geometry)
+    # Assign patterns - 
+    # These are meant to match shapes in opposite directions under the same pattern 
+    # But they are not the final pattern name
+    assigned_patterns = pd.DataFrame()
 
+    for r in patterns.route_short_name.unique():
+        t0 = direction_0.loc[direction_0.route_short_name==r]
+        t1 = direction_1.loc[direction_1.route_short_name==r]
+    
+        if len(t0) >= len(t1):
+            longer = t0.reset_index()
+            shorter = t1.reset_index()
+        else:
+            longer = t1.reset_index()
+            shorter = t0.reset_index()
+    
+        abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    
+        longer['aux_pattern'] = ''
+        shorter['aux_pattern'] = ''
+    
+        for i in range(len(longer)):
+            longer.loc[i, 'aux_pattern'] = abc[i]
+    
+            ntrips = longer.iloc[i]['ntrips']
+            length_m = longer.iloc[i]['length_m']
+            nstops = longer.iloc[i]['nstops']
+    
+            for j in range(len(shorter)):
+        #         condition1 = ntrips*0.95 <= shorter.iloc[j]['ntrips'] <= ntrips*1.05
+                condition2 = length_m*0.95 <= shorter.iloc[j]['length_m'] <= length_m*1.05
+                condition3 = nstops*0.95 <= shorter.iloc[j]['nstops'] <= nstops*1.05
+    
+                if condition2 & condition3:
+                    shorter.loc[j, 'aux_pattern'] = abc[i]
+    
+        assigned_patterns = assigned_patterns.append(longer)
+        assigned_patterns = assigned_patterns.append(shorter)
+        assigned_patterns.drop('index', inplace=True, axis=1)
+        
+    # Intersection geometries I need
+    intersection1 = pd.merge(intersection, polys[['NAME']], left_on='poly_index', right_on=polys.index, how='left')
+    intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
+    
+    # Merge all variables
+    assigned_patterns1 = pd.merge(assigned_patterns[['route_short_name', 'shape_id','aux_pattern', 'ntrips']], intersection1, how='right')
+    assigned_patterns2 = assigned_patterns1.pivot_table(['ntrips', 'km_in_poly'], index = ['route_short_name', 'aux_pattern'], aggfunc='sum').reset_index().sort_values(by = ['route_short_name','ntrips'], ascending=False)
+    assigned_patterns2.reset_index(inplace=True)
+    assigned_patterns2.drop('index', axis=1, inplace=True)
+    
+    # Assigned patterns depending on the total trips for both directions combined
+    for r in assigned_patterns2.route_short_name.unique():
+        aux = assigned_patterns2.loc[assigned_patterns2.route_short_name==r]
+        pattern_list = list(abc[0:len(aux)])
+        assigned_patterns2.loc[assigned_patterns2.route_short_name==r, 'pattern'] = pattern_list
+    
+    # Merge dataframe with the real patterns and df with the municipalities
+    df1 = assigned_patterns1[['route_short_name', 'aux_pattern', 'shape_id', 'NAME', 'km_in_poly','geometry']]
+    df2 = assigned_patterns2[['route_short_name', 'aux_pattern', 'pattern']]
+    
+    # This is what I need to show the table
+    # I have the fields to filter by route and county
+    try_this = pd.merge(df1, df2, how='left')
+    table = try_this.pivot_table('km_in_poly', index=['route_short_name', 'pattern', 'NAME'], aggfunc='sum').reset_index()
+    table.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern', km_in_poly = 'Kilometers'), inplace=True)
+    
+    # This is what I need to draw the map
+    # I have the fields to filter by route and county
+    gdf_intersections = gpd.GeoDataFrame(data = assigned_patterns1[['route_short_name', 'NAME']], geometry = assigned_patterns1.geometry)
+    gdf_intersections.rename(columns = dict(route_short_name = 'Route', NAME = 'County'), inplace=True)
+    
     # -------------------------------------------------------------------------------
     # --------------------------- APP -----------------------------------------------
     # -------------------------------------------------------------------------------
@@ -104,8 +179,8 @@ if uploaded_files != []:
     col1, col2, col3= st.beta_columns((1, 2 ,3))
         
     # Select filters
-    poly_names_list = list(intersection3['County'].unique())
-    lines_names_list = list(intersection3['Route'].unique())
+    poly_names_list = list(gdf_intersections['County'].unique())
+    lines_names_list = list(gdf_intersections['Route'].unique())
     
     poly_names_list.sort()
     lines_names_list.sort()
@@ -115,42 +190,44 @@ if uploaded_files != []:
         filter_polys = st.multiselect('Counties', poly_names_list)
         filter_routes = st.multiselect('Routes', lines_names_list)
         st.subheader('Pivot dimensions')
-        group_by = st.multiselect('Group by', ['County', 'Route', 'Service ID'], default = ['County', 'Route'])
+        group_by = st.multiselect('Group by', ['County', 'Route', 'Pattern'], default = ['County', 'Route'])
         
     if filter_polys == []:
-        filter_polys = list(intersection3['County'].unique())
+        filter_polys = poly_names_list
         
     if filter_routes == []:
-        filter_routes = list(intersection3['Route'].unique())
+        filter_routes = lines_names_list
         
-        
-    # # Get the total_km per polygon for map styling
-    # total_km_per_poly = intersection3.loc[intersection3.route_short_name.isin(filter_routes)].pivot_table(['total_km','total_miles'], index=['NAME'], aggfunc='sum').reset_index()
-    # total_km_per_poly = pd.merge(total_km_per_poly, polys[['NAME', 'geometry']], how='left')
-    # total_km_per_poly = gpd.GeoDataFrame(data=total_km_per_poly.drop('geometry', axis=1), geometry=total_km_per_poly.geometry)
-    
-    # # Calculate weigth for styling
-    # total_km_per_poly['weight'] = total_km_per_poly.total_km/total_km_per_poly.total_km.max()
-    
-    # # Filter the polygons that pass the filter for the map
-    # filtered = total_km_per_poly.loc[total_km_per_poly['NAME'].isin(filter_polys)]
-    # # Data for map
-    # data_poly = filtered.__geo_interface__
-        
-    # # Calculate the center of the filter polygons
-    # avg_lon = total_km_per_poly.loc[total_km_per_poly['NAME'].isin(filter_polys), 'geometry'].centroid.x.mean()
-    # avg_lat = total_km_per_poly.loc[total_km_per_poly['NAME'].isin(filter_polys), 'geometry'].centroid.y.mean()
-        
-    # Filter polygons that passed the filter
-    filtered = intersection3.loc[
-        (intersection3['County'].isin(filter_polys))&
-        (intersection3.Route.isin(filter_routes))
+    # Work for the datatable
+    # Aggregate data as indicated in Pivot dimensions    
+    # Filter data
+    table_poly = table.loc[
+        (table['Route'].isin(filter_routes))&
+        (table['County'].isin(filter_polys))
         ]
+    table_poly = table_poly.pivot_table(['Kilometers'], index=group_by, aggfunc='sum').reset_index()
+    table_poly['Kilometers'] = table_poly['Kilometers'].apply(lambda x: str(round(x, 2)))     
+                
+    # Filter polygons that passed the filter
+    # Merge the intersection with the number of trips per shape
+    intersection_aux = pd.merge(trips, intersection1, how='right')
+    intersection2 = intersection_aux.drop_duplicates(subset=['route_short_name', 'NAME']).loc[:,['route_short_name', 'NAME']].reset_index()
     
+    # Add polygons geometries
+    intersection2 = pd.merge(intersection2, polys, left_on='NAME', right_on='NAME', how='left')
+    
+    # This is what I need to select the polygons that passed the route and county filters
+    route_polys = gpd.GeoDataFrame(data=intersection2[['route_short_name', 'NAME']], geometry=intersection2.geometry)
+    
+    filtered = route_polys.loc[
+        (route_polys['NAME'].isin(filter_polys))&
+        (route_polys.route_short_name.isin(filter_routes))
+        ]
+        
     # Filter line intersections that passed the filters
-    line_intersections = intersection1.loc[
-        (intersection1.route_short_name.isin(filter_routes))&
-        (intersection1.poly_index.isin(polys.loc[polys['NAME'].isin(filter_polys)].index.unique()))
+    line_intersections = gdf_intersections.loc[
+        (gdf_intersections['Route'].isin(filter_routes))&
+        (gdf_intersections['County'].isin(filter_polys))
         ].__geo_interface__
     
     # Filter the shapes that passed the routes filters
@@ -162,16 +239,10 @@ if uploaded_files != []:
     
     # Calculate the center
     avg_lon = polys.geometry.centroid.x.mean()
-    avg_lat = polys.geometry.centroid.y.mean()
-    
-    # Work for the datatable
-    # Aggregate data as indicated in Pivot dimensions    
-    # Filter data
-    table_poly = filtered.pivot_table(['total_km'], index=group_by, aggfunc='sum').reset_index()
-    table_poly['total_km'] = table_poly['total_km'].apply(lambda x: str(round(x, 2)))         
+    avg_lat = polys.geometry.centroid.y.mean()    
 
     with col2:
-        st.subheader('Total km = {}'.format(round(filtered.total_km.sum(),1)))
+        st.subheader('Total km = {}'.format(round(table_poly['Kilometers'].map(float).sum(),1)))
                     # Download data
         def get_table_download_link(df):
             """Generates a link allowing the data in a given panda dataframe to be downloaded
@@ -205,7 +276,7 @@ if uploaded_files != []:
                     data=filtered, 
                     # stroked = True,
                     # filled = False,
-                    opacity=0.2,
+                    opacity=0.6,
                     get_fill_color= [220, 230, 245],#[150, 150, 150], #'[properties.weight * 255, properties.weight * 255, 255]',#
                     get_line_color= [255, 255, 255],
                     get_line_width = 30,
