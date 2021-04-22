@@ -1,6 +1,6 @@
 [theme]
-primaryColor = '#005BAA'
-backgroundColor = '#13264B'
-secondaryBackgroundColor = '#005BAA'
+primaryColor = '#13264B'
+backgroundColor = '#005BAA'
+secondaryBackgroundColor = ''
 textColor = '#fafafa'
 font = 'Avenir Next'
