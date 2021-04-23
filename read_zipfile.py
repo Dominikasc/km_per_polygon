@@ -12,7 +12,6 @@ import geopandas as gpd
 from shapely.geometry import LineString
 import itertools
 import base64
-import keplergl as kp
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Upload files and close the sidebar')
