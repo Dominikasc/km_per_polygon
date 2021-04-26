@@ -14,7 +14,7 @@ import itertools
 import base64
 
 st.set_page_config(layout="wide")
-st.sidebar.header('Upload files and close the sidebar')
+st.sidebar.header('Upload routes.txt, trips.txt, stop_times.txt and shapes.txt')
 uploaded_files = st.sidebar.file_uploader('File uploader', accept_multiple_files=True, type=['txt'])
 
 # Get the polygons
