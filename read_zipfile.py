@@ -190,7 +190,7 @@ if uploaded_files != []:
         filter_polys = st.multiselect('Counties', poly_names_list)
         filter_routes = st.multiselect('Routes', lines_names_list)
         st.subheader('Pivot dimensions')
-        group_by = st.multiselect('Group by', ['County', 'Route', 'Pattern'], default = ['County', 'Route'])
+        group_by = st.multiselect('Group by', ['County', 'Route', 'Pattern'], default = ['County', 'Route', 'Pattern'])
         
     if filter_polys == []:
         filter_polys = poly_names_list
