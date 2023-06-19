@@ -1,27 +1,30 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Apr 20 09:13:18 2021
+Modified on Mon Jun 19git 2023
 
 @author: santi
+@coauthor: dominika
+
 """
 
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
 import geopandas as gpd
+import numpy as np
+
 from shapely.geometry import LineString
 import itertools
 import base64
+import glob 
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Drag and drop files here')
-uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_times.txt and shapes.txt', accept_multiple_files=True, type=['txt'])
+uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_times.txt, shapes.txt and polygons.geojson', accept_multiple_files=True, type=['txt','geojson'])
 
-# Get the polygons
-polys = gpd.read_file("https://raw.githubusercontent.com/Bondify/km_per_polygon/main/data/polygons.geojson")
-polys = polys.to_crs(epsg=4326)
-
- # Upload files from GTFS
+# get files
+# Upload files from GTFS
 if uploaded_files != []:
     for file in uploaded_files:
         name = file.name
@@ -36,12 +39,29 @@ if uploaded_files != []:
             trips = pd.read_csv(file)
         elif name == 'stop_times.txt':
             stop_times = pd.read_csv(file)  
+        elif name == 'calendar.txt':
+            calendar = pd.read_csv("~/git/km_per_polygon/data/calendar.txt")
         elif name == 'shapes.txt':
             aux = pd.read_csv(file)
             aux.sort_values(by=['shape_id', 'shape_pt_sequence'], ascending=True, inplace=True)
             aux = gpd.GeoDataFrame(data=aux[['shape_id']], geometry = gpd.points_from_xy(x = aux.shape_pt_lon, y=aux.shape_pt_lat))
             lines = [LineString(list(aux.loc[aux.shape_id==s, 'geometry']))  for s in aux.shape_id.unique()]
             shapes = gpd.GeoDataFrame(data=aux.shape_id.unique(), geometry = lines, columns = ['shape_id'])
+        elif name == '*.geojson':     # Get the polygons, need to be uploaded as Geojson, not sure if this works
+            polys = gpd.read_file(file)
+            polys = polys.to_crs(epsg=4326)
+    
+    # Define number of days
+    weekday = st.number_input('Insert number of weekdays')
+    st.write('The current number of weekdays is ', weekday)
+    saturday = st.number_input('Insert number of saturdays')
+    st.write('The current number of saturdays is ', saturday)
+    sunday = st.number_input('Insert number of sundays')
+    st.write('The current number of sundays is ', sunday)
+    
+    #weekday=251
+    #saturday=52
+    #sunday =62
     
     # I need the route_id in stop_times
     stop_times = pd.merge(stop_times, trips, how='left')
@@ -71,24 +91,43 @@ if uploaded_files != []:
     intersection = intersection.loc[~intersection.geometry.is_empty].reset_index()
     
     # Calculate the length of the intersection in km
-    intersection['km_in_poly'] = intersection.geometry.to_crs(32632).length/1000
+    intersection['km_in_poly'] = intersection.geometry.to_crs(3587).length/1000  # changed from 32632 to 3587
     intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
     
+
+    # Add the number of days per year 
+    
+    conditions  = [calendar["monday"] == 1, calendar["saturday"] == 1,calendar["sunday"] == 1]
+    daytypes = [ weekday, saturday, sunday ]
+    calendar["days_per_year"] = np.select(conditions, daytypes, default=np.nan)
+
+
     # Get the patters with the same criteria as Remix
     # Pattern A is the one with more trips
     # If two patterns have the same number of trips, then the longer
     
     # Number of trips per shape
-    trips_per_shape = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id'], aggfunc='count').reset_index()
-    trips_per_shape.rename(columns = dict(trip_id = 'ntrips'), inplace=True)
+    trips_per_shape0 = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id','service_id'], aggfunc='count').reset_index()
+    trips_per_shape0.rename(columns = dict(trip_id = 'ntrips'), inplace=True)
     shapes.crs = {'init':'epsg:4326'}
-    shapes['length_m'] = shapes.geometry.to_crs(epsg=4326).length
+    shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326
+
+    trips_per_shape = pd.merge(trips_per_shape0, calendar[['service_id','days_per_year']], how='left')
+    trips_per_shape['trips_per_year'] = trips_per_shape['ntrips']*trips_per_shape['days_per_year']
+    trips_per_shape = trips_per_shape.groupby(['route_id','shape_id','direction_id']).aggregate({'ntrips':'max','trips_per_year':'sum'}).reset_index()
     
     # Number of stops per shape
-    aux = pd.merge(stop_times[['route_id', 'stop_id', 'stop_sequence', 'trip_id']], trips[['trip_id', 'route_id', 'shape_id']], how='left')
-    aux = aux.drop_duplicates(subset=['route_id', 'shape_id', 'stop_sequence']).drop('trip_id', axis=1).sort_values(by=['route_id', 'shape_id', 'stop_sequence'], ascending=True)
-    stops_per_shape = aux.pivot_table('stop_sequence', index='shape_id', aggfunc='count').reset_index()
-    stops_per_shape.rename(columns = dict(stop_sequence = 'nstops'), inplace=True)
+    aux = stop_times[['route_id', 'stop_id', 'stop_sequence', 'trip_id', 'shape_id','shape_dist_traveled']] # No need to merge with trips, data already merged in line 66
+    aux1 = aux.groupby(['route_id', 'trip_id','shape_id'])['shape_dist_traveled'].max().reset_index() # add shapes_dist_travelled for accurate km in pattern sorting
+    aux1 = pd.merge(aux[['route_id', 'stop_id', 'stop_sequence', 'trip_id', 'shape_id']], aux1[['route_id', 'trip_id','shape_id','shape_dist_traveled']], left_on=['route_id','trip_id','shape_id'],right_on=['route_id','trip_id','shape_id'], how='left')
+    aux1 = aux1.drop_duplicates(subset=['shape_id', 'stop_sequence']).drop('trip_id', axis=1).sort_values(by=['route_id', 'shape_id', 'stop_sequence'], ascending=True).reset_index() # Removed route_id from subset to get accurate nb of stops
+
+    # Get stops per shape
+
+    stops_per_shape = aux1.groupby('shape_id').aggregate({'stop_sequence':'count','shape_dist_traveled':'max'}).reset_index()
+    stops_per_shape.rename(columns = dict(stop_sequence = 'nstops', shape_dist_traveled = 'pattern_dist' ), inplace=True)
+    stops_per_shape.pattern_dist = stops_per_shape.pattern_dist/1000
+    
     
     # Get all the variables I need to assign patterns in the same df
     patterns = pd.merge(trips_per_shape, shapes.drop('geometry', axis=1), how='left').sort_values(by=['route_id', 'ntrips', 'length_m'], ascending=False)
@@ -124,28 +163,37 @@ if uploaded_files != []:
             longer.loc[i, 'aux_pattern'] = abc[i]
     
             ntrips = longer.iloc[i]['ntrips']
-            length_m = longer.iloc[i]['length_m']
+            pattern_dist = longer.iloc[i]['pattern_dist']
             nstops = longer.iloc[i]['nstops']
     
             for j in range(len(shorter)):
         #         condition1 = ntrips*0.95 <= shorter.iloc[j]['ntrips'] <= ntrips*1.05
-                condition2 = length_m*0.95 <= shorter.iloc[j]['length_m'] <= length_m*1.05
+                condition2 = pattern_dist*0.7 <= shorter.iloc[j]['pattern_dist'] <= pattern_dist*1.3 # 0.95 is too conservative, patterns not found correctly
                 condition3 = nstops*0.95 <= shorter.iloc[j]['nstops'] <= nstops*1.05
     
                 if condition2 & condition3:
                     shorter.loc[j, 'aux_pattern'] = abc[i]
     
-        assigned_patterns = assigned_patterns.append(longer)
-        assigned_patterns = assigned_patterns.append(shorter)
+        assigned_patterns = assigned_patterns.append(longer) # possibly necessary to use concat?
+        assigned_patterns = assigned_patterns.append(shorter) # possibly necessary to use concat?
         assigned_patterns.drop('index', inplace=True, axis=1)
         
     # Intersection geometries I need
     intersection1 = pd.merge(intersection, polys[['NAME']], left_on='poly_index', right_on=polys.index, how='left')
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
     
+     # Get actual number of stops and pattern distance
+    assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern'])['nstops'].sum().reset_index()
+    assigned_patterns3 = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
+    
+    assigned_patterns4 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern'])['pattern_dist'].sum().reset_index()
+    assigned_patterns = pd.merge(assigned_patterns3.loc[:, ~assigned_patterns3.columns.isin(['index','pattern_dist'])],assigned_patterns4,how='left').reset_index().sort_values(['route_short_name'])
+
     # Merge all variables
-    assigned_patterns1 = pd.merge(assigned_patterns[['route_short_name', 'shape_id','aux_pattern', 'ntrips']], intersection1, how='right')
-    assigned_patterns2 = assigned_patterns1.pivot_table(['ntrips', 'km_in_poly'], index = ['route_short_name', 'aux_pattern'], aggfunc='sum').reset_index().sort_values(by = ['route_short_name','ntrips'], ascending=False)
+    assigned_patterns1 = pd.merge(assigned_patterns[['route_short_name', 'shape_id','aux_pattern', 'ntrips','trips_per_year','nstops','pattern_dist']], intersection1, how='right') # Added trips per year
+    assigned_patterns1['km_per_year'] = assigned_patterns1.km_in_poly * assigned_patterns1.trips_per_year     # Add km per year
+
+    assigned_patterns2 = assigned_patterns1.groupby(['route_short_name', 'aux_pattern']).aggregate({'nstops':'max','ntrips':'max','km_in_poly':'sum','km_per_year':'sum','pattern_dist':'max'}).reset_index().sort_values(by = ['route_short_name','ntrips'], ascending=False) # New
     assigned_patterns2.reset_index(inplace=True)
     assigned_patterns2.drop('index', axis=1, inplace=True)
     
@@ -154,16 +202,16 @@ if uploaded_files != []:
         aux = assigned_patterns2.loc[assigned_patterns2.route_short_name==r]
         pattern_list = list(abc[0:len(aux)])
         assigned_patterns2.loc[assigned_patterns2.route_short_name==r, 'pattern'] = pattern_list
-    
-    # Merge dataframe with the real patterns and df with the municipalities
-    df1 = assigned_patterns1[['route_short_name', 'aux_pattern', 'shape_id', 'NAME', 'km_in_poly','geometry']]
+
+     # Merge dataframe with the real patterns and df with the municipalities
+    df1 = assigned_patterns1[['route_short_name', 'aux_pattern', 'shape_id', 'NAME', 'km_in_poly','geometry','km_per_year']] # Added km_per_year
     df2 = assigned_patterns2[['route_short_name', 'aux_pattern', 'pattern']]
     
     # This is what I need to show the table
     # I have the fields to filter by route and county
     try_this = pd.merge(df1, df2, how='left')
-    table = try_this.pivot_table('km_in_poly', index=['route_short_name', 'pattern', 'NAME'], aggfunc='sum').reset_index()
-    table.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern', km_in_poly = 'Kilometers'), inplace=True)
+    table = try_this.pivot_table(['km_in_poly','km_per_year'], index=['route_short_name', 'pattern', 'NAME'], aggfunc='sum').reset_index() # Added km_per_year
+    table.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern', km_in_poly = 'Kilometers per county', km_per_year = 'Kilometers per year'), inplace=True)
     
     # This is what I need to draw the map
     # I have the fields to filter by route and county
@@ -174,7 +222,7 @@ if uploaded_files != []:
     # --------------------------- APP -----------------------------------------------
     # -------------------------------------------------------------------------------
     # LAYING OUT THE TOP SECTION OF THE APP
-    st.header("Bus kilometers per county")
+    st.header("Bus kilometers per county (geographical boundary)")
     # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
     col1, col2, col3= st.beta_columns((1, 2 ,3))
         
@@ -205,8 +253,11 @@ if uploaded_files != []:
         (table['Route'].isin(filter_routes))&
         (table['County'].isin(filter_polys))
         ]
-    table_poly = table_poly.pivot_table(['Kilometers'], index=group_by, aggfunc='sum').reset_index()
-    table_poly['Kilometers'] = table_poly['Kilometers'].apply(lambda x: str(round(x, 2)))     
+    table_poly = table_poly.pivot_table(['Kilometers per county','Kilometers per year'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
+
+    table_poly['Kilometers per county'] = table_poly['Kilometers per county'].apply(lambda x: str(round(x, 2)))     
+    table_poly['Kilometers per year'] = table_poly['Kilometers per year'].apply(lambda x: str(round(x, 2)))     
+
                 
     # Filter polygons that passed the filter
     # Merge the intersection with the number of trips per shape
@@ -242,7 +293,7 @@ if uploaded_files != []:
     avg_lat = polys.geometry.centroid.y.mean()    
 
     with col2:
-        st.subheader('Total km = {}'.format(round(table_poly['Kilometers'].map(float).sum(),1)))
+        st.subheader('Total km per county = {}'.format(round(table_poly['Kilometers per county'].map(float).sum(),1)))
                     # Download data
         def get_table_download_link(df):
             """Generates a link allowing the data in a given panda dataframe to be downloaded
