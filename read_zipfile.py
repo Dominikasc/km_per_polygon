@@ -17,7 +17,6 @@ import numpy as np
 from shapely.geometry import LineString
 import itertools
 import base64
-import glob 
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Drag and drop files here')
