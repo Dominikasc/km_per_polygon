@@ -310,7 +310,8 @@ if uploaded_files != []:
         st.dataframe(table_poly, 900, 600)
         st.markdown(get_table_download_link(table_poly), unsafe_allow_html=True)
       
-   """with col3: 
+   """
+   with col3: 
         # CREATE THE MAP
         st.subheader('Map')
         st.pydeck_chart(pdk.Deck(
