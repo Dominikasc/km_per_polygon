@@ -55,12 +55,12 @@ if uploaded_files != []:
     #    polys = polys.to_crs(epsg=4326)
     
     # Define number of days
-    weekday = st.number_input('Insert number of weekdays')
-    st.write('The current number of weekdays is ', weekday)
-    saturday = st.number_input('Insert number of saturdays')
-    st.write('The current number of saturdays is ', saturday)
-    sunday = st.number_input('Insert number of sundays')
-    st.write('The current number of sundays is ', sunday)
+    weekday = st.sidebar.number_input('Insert number of weekdays')
+    st.sidebar.write('The current number of weekdays is ', weekday)
+    saturday = st.sidebar.number_input('Insert number of saturdays')
+    st.sidebar.write('The current number of saturdays is ', saturday)
+    sunday = st.sidebar.number_input('Insert number of sundays')
+    st.sidebar.write('The current number of sundays is ', sunday)
     
     #weekday=251
     #saturday=52
