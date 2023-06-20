@@ -226,7 +226,7 @@ if uploaded_files != []:
     # LAYING OUT THE TOP SECTION OF THE APP
     st.header("Bus kilometers per county (geographical boundary)")
     # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
-    col1, col2, col3= st.beta_columns((1, 2 ,3))
+    col1, col2, col3= st.columns((1, 2 ,3))
         
     # Select filters
     poly_names_list = list(gdf_intersections['County'].unique())
