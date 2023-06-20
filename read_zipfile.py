@@ -43,7 +43,7 @@ if uploaded_files != []:
         elif name == 'stop_times.txt':
             stop_times = pd.read_csv(file)  
         elif name == 'calendar.txt':
-            calendar = pd.read_csv("~/git/km_per_polygon/data/calendar.txt")
+            calendar = pd.read_csv(file)
         elif name == 'shapes.txt':
             aux = pd.read_csv(file)
             aux.sort_values(by=['shape_id', 'shape_pt_sequence'], ascending=True, inplace=True)
