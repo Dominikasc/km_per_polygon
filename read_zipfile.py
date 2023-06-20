@@ -176,11 +176,12 @@ if uploaded_files != []:
     
                 if condition2 & condition3:
                     shorter.loc[j, 'aux_pattern'] = abc[i]
-    
-        assigned_patterns = assigned_patterns.append(longer) # possibly necessary to use concat?
-        assigned_patterns = assigned_patterns.append(shorter) # possibly necessary to use concat?
+
+        assigned_patterns = pd.concat([assigned_patterns,longer])
+        assigned_patterns = pd.concat([assigned_patterns,shorter])
         assigned_patterns.drop('index', inplace=True, axis=1)
-        
+
+
     # Intersection geometries I need
     intersection1 = pd.merge(intersection, polys[['NAME']], left_on='poly_index', right_on=polys.index, how='left')
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
