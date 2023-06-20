@@ -23,7 +23,7 @@ st.sidebar.header('Drag and drop files here')
 uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_times.txt, shapes.txt and polygons.geojson', accept_multiple_files=True, type=['txt','geojson'])
 
 # Get the polygons
-polys = gpd.read_file("https://raw.githubusercontent.com/Bondify/km_per_polygon/main/data/polygons.geojson")
+polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/polygons.geojson")
 polys = polys.to_crs(epsg=4326)
 
 # get files
