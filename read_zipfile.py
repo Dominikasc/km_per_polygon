@@ -99,11 +99,10 @@ if uploaded_files != []:
     
 
     # Add the number of days per year 
-    
-    conditions  = [calendar["monday"] == 1, calendar["saturday"] == 1,calendar["sunday"] == 1]
-    daytypes = [ weekday, saturday, sunday ]
-    calendar["days_per_year"] = np.select(conditions, daytypes, default=np.nan)
 
+    calendar.loc[calendar['monday']>0, 'days_per_year'] = weekday
+    calendar.loc[calendar['saturday']>0, 'days_per_year'] = saturday
+    calendar.loc[calendar['sunday']>0, 'days_per_year'] = sunday
 
     # Get the patters with the same criteria as Remix
     # Pattern A is the one with more trips
