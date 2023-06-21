@@ -184,12 +184,9 @@ if uploaded_files != []:
     intersection1 = pd.merge(intersection, polys[['NAME']], left_on='poly_index', right_on=polys.index, how='left')
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
     
-     # Get actual number of stops and pattern distance
-    assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern'])['nstops'].sum().reset_index()
-    assigned_patterns3 = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
-    
-    assigned_patterns4 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern'])['pattern_dist'].sum().reset_index()
-    assigned_patterns = pd.merge(assigned_patterns3.loc[:, ~assigned_patterns3.columns.isin(['index','pattern_dist'])],assigned_patterns4,how='left').reset_index().sort_values(['route_short_name'])
+     # Get actual number of stops, trips, trips per year and pattern distance
+    assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern']).aggregate({'nstops':'sum','pattern_dist':'sum','ntrips':'sum','trips_per_year':'sum',}).reset_index()
+    assigned_patterns = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops','pattern_dist','ntrips','trips_per_year'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
 
     # Merge all variables
     assigned_patterns1 = pd.merge(assigned_patterns[['route_short_name', 'shape_id','aux_pattern', 'ntrips','trips_per_year','nstops','pattern_dist']], intersection1, how='right') # Added trips per year
