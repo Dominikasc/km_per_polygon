@@ -16,6 +16,7 @@ import geopandas as gpd
 from shapely.geometry import LineString
 import itertools
 import base64
+from glob import iglob
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Drag and drop files here')
@@ -49,10 +50,10 @@ if uploaded_files != []:
             aux = gpd.GeoDataFrame(data=aux[['shape_id']], geometry = gpd.points_from_xy(x = aux.shape_pt_lon, y=aux.shape_pt_lat))
             lines = [LineString(list(aux.loc[aux.shape_id==s, 'geometry']))  for s in aux.shape_id.unique()]
             shapes = gpd.GeoDataFrame(data=aux.shape_id.unique(), geometry = lines, columns = ['shape_id'])
-        elif name == '*.geojson':     # Get the polygons, need to be uploaded as Geojson, not sure if this works
+        elif name == next(iglob('*.geojson')):     # Get the polygons, need to be uploaded as Geojson, not sure if this works
             polys = gpd.read_file(file)
             polys = polys.to_crs(epsg=4326)
-    
+
     # Define number of days
     #weekday = st.sidebar.number_input('Insert number of weekdays')
     #st.sidebar.write('The current number of weekdays is ', weekday)
