@@ -115,7 +115,7 @@ if uploaded_files != []:
 
     trips_per_shape = pd.merge(trips_per_shape0, calendar[['service_id','days_per_year']], how='left')
     trips_per_shape['trips_per_year'] = trips_per_shape['ntrips']*trips_per_shape['days_per_year']
-    trips_per_shape = trips_per_shape.groupby(['route_id','shape_id','direction_id']).aggregate({'ntrips':'max','trips_per_year':'sum'}).reset_index()
+    trips_per_shape = trips_per_shape.groupby(['route_id','shape_id','direction_id']).aggregate({'ntrips':'sum','trips_per_year':'sum'}).reset_index()
     
     # Number of stops per shape
     aux = stop_times[['route_id', 'stop_id', 'stop_sequence', 'trip_id', 'shape_id','shape_dist_traveled']] # No need to merge with trips, data already merged in line 66
