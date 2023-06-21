@@ -26,13 +26,13 @@ uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_ti
 # Get the polygons
 # polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/polygons.geojson")
 # polys = gpd.read_file(next(iglob('*.csv')))
-polylist = glob.glob("*.geojson")  # Get all pdf files in the current folder
+polylist = glob.glob("*.geojson")  # Get all geojson files in the current folder
 
 pli = []
 
 for filename in polylist:
     pf = gpd.read_file(filename)
-    li.append(pf)
+    pli.append(pf)
 
 polys = gpd.GeoDataFrame(pd.concat(pli, ignore_index=True))
 polys = polys.to_crs(epsg=4326)
