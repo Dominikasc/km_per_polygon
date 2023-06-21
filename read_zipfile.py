@@ -16,7 +16,8 @@ import geopandas as gpd
 from shapely.geometry import LineString
 import itertools
 import base64
-from glob import iglob
+#from glob import iglob
+import glob
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Drag and drop files here')
@@ -24,9 +25,18 @@ uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_ti
 
 # Get the polygons
 # polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/polygons.geojson")
-# polys = polys.to_crs(epsg=4326)
-polys = gpd.read_file(next(iglob('*.csv')))
+# polys = gpd.read_file(next(iglob('*.csv')))
+polylist = glob.glob("*.geojson")  # Get all pdf files in the current folder
+
+pli = []
+
+for filename in polylist:
+    pf = gpd.read_file(filename)
+    li.append(pf)
+
+polys = gpd.GeoDataFrame(pd.concat(pli, ignore_index=True))
 polys = polys.to_crs(epsg=4326)
+
 
 # get files
 # Upload files from GTFS
