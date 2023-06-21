@@ -25,6 +25,8 @@ uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_ti
 # Get the polygons
 # polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/polygons.geojson")
 # polys = polys.to_crs(epsg=4326)
+polys = gpd.read_file(next(iglob('*.csv')))
+polys = polys.to_crs(epsg=4326)
 
 # get files
 # Upload files from GTFS
@@ -50,9 +52,9 @@ if uploaded_files != []:
             aux = gpd.GeoDataFrame(data=aux[['shape_id']], geometry = gpd.points_from_xy(x = aux.shape_pt_lon, y=aux.shape_pt_lat))
             lines = [LineString(list(aux.loc[aux.shape_id==s, 'geometry']))  for s in aux.shape_id.unique()]
             shapes = gpd.GeoDataFrame(data=aux.shape_id.unique(), geometry = lines, columns = ['shape_id'])
-        elif name == next(iglob('*.geojson')):     # Get the polygons, need to be uploaded as Geojson, not sure if this works
-            polys = gpd.read_file(file)
-            polys = polys.to_crs(epsg=4326)
+        # elif name == next(iglob('*.geojson')):     # Get the polygons, need to be uploaded as Geojson, not sure if this works
+        #    polys = gpd.read_file(file)
+        #    polys = polys.to_crs(epsg=4326)
 
     # Define number of days
     #weekday = st.sidebar.number_input('Insert number of weekdays')
