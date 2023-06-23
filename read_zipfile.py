@@ -17,7 +17,7 @@ from shapely.geometry import LineString
 import itertools
 import base64
 #from glob import iglob
-import glob
+#import glob
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Drag and drop files here')
@@ -26,16 +26,16 @@ uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_ti
 # Get the polygons
 # polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/polygons.geojson")
 # polys = gpd.read_file(next(iglob('*.csv')))
-polylist = glob.glob("*.geojson")  # Get all geojson files in the current folder
+# polylist = glob.glob("*.geojson")  # Get all geojson files in the current folder
 
-pli = []
+# pli = []
 
-for filename in polylist:
-    pf = gpd.read_file(filename)
-    pli.append(pf)
+# for filename in polylist:
+#     pf = gpd.read_file(filename)
+#     pli.append(pf)
 
-polys = gpd.GeoDataFrame(pd.concat(pli, ignore_index=True))
-polys = polys.to_crs(epsg=4326)
+# polys = gpd.GeoDataFrame(pd.concat(pli, ignore_index=True))
+# polys = polys.to_crs(epsg=4326)
 
 
 # get files
@@ -62,9 +62,9 @@ if uploaded_files != []:
             aux = gpd.GeoDataFrame(data=aux[['shape_id']], geometry = gpd.points_from_xy(x = aux.shape_pt_lon, y=aux.shape_pt_lat))
             lines = [LineString(list(aux.loc[aux.shape_id==s, 'geometry']))  for s in aux.shape_id.unique()]
             shapes = gpd.GeoDataFrame(data=aux.shape_id.unique(), geometry = lines, columns = ['shape_id'])
-        # elif name == next(iglob('*.geojson')):     # Get the polygons, need to be uploaded as Geojson, not sure if this works
-        #    polys = gpd.read_file(file)
-        #    polys = polys.to_crs(epsg=4326)
+        elif name == 'polygons.geojson':     # Get the polygons, need to be uploaded as Geojson, not sure if this works
+            polys = gpd.read_file(file)
+            polys = polys.to_crs(epsg=4326)
 
     # Define number of days
     #weekday = st.sidebar.number_input('Insert number of weekdays')
