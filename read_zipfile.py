@@ -16,14 +16,27 @@ import geopandas as gpd
 from shapely.geometry import LineString
 import itertools
 import base64
+#from glob import iglob
+#import glob
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Drag and drop files here')
 uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_times.txt, shapes.txt and polygons.geojson', accept_multiple_files=True, type=['txt','geojson'])
 
 # Get the polygons
-polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/polygons.geojson")
-polys = polys.to_crs(epsg=4326)
+# polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/polygons.geojson")
+# polys = gpd.read_file(next(iglob('*.csv')))
+# polylist = glob.glob("*.geojson")  # Get all geojson files in the current folder
+
+# pli = []
+
+# for filename in polylist:
+#     pf = gpd.read_file(filename)
+#     pli.append(pf)
+
+# polys = gpd.GeoDataFrame(pd.concat(pli, ignore_index=True))
+# polys = polys.to_crs(epsg=4326)
+
 
 # get files
 # Upload files from GTFS
@@ -49,21 +62,18 @@ if uploaded_files != []:
             aux = gpd.GeoDataFrame(data=aux[['shape_id']], geometry = gpd.points_from_xy(x = aux.shape_pt_lon, y=aux.shape_pt_lat))
             lines = [LineString(list(aux.loc[aux.shape_id==s, 'geometry']))  for s in aux.shape_id.unique()]
             shapes = gpd.GeoDataFrame(data=aux.shape_id.unique(), geometry = lines, columns = ['shape_id'])
-    #elif name == '*.geojson':     # Get the polygons, need to be uploaded as Geojson, not sure if this works
-    #    polys = gpd.read_file(file)
-    #    polys = polys.to_crs(epsg=4326)
-    
+        elif name == 'polygons.geojson':     # Get the polygons, need to be uploaded as Geojson, not sure if this works
+            polys = gpd.read_file(file)
+            polys = polys.to_crs(epsg=4326)
+
     # Define number of days
-    #weekday = st.sidebar.number_input('Insert number of weekdays')
-    #st.sidebar.write('The current number of weekdays is ', weekday)
-    #saturday = st.sidebar.number_input('Insert number of saturdays')
-    #st.sidebar.write('The current number of saturdays is ', saturday)
-    #sunday = st.sidebar.number_input('Insert number of sundays')
-    #st.sidebar.write('The current number of sundays is ', sunday)
+    weekday = st.sidebar.number_input('Insert number of weekdays')
+    saturday = st.sidebar.number_input('Insert number of saturdays')
+    sunday = st.sidebar.number_input('Insert number of sundays')
     
-    weekday=251
-    saturday=52
-    sunday =62
+    #weekday=251
+    #saturday=52
+    #sunday =62
     
     # I need the route_id in stop_times
     stop_times = pd.merge(stop_times, trips, how='left')
