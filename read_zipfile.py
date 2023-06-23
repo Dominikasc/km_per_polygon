@@ -68,11 +68,8 @@ if uploaded_files != []:
 
     # Define number of days
     weekday = st.sidebar.number_input('Insert number of weekdays')
-    st.sidebar.write('The current number of weekdays is ', weekday)
     saturday = st.sidebar.number_input('Insert number of saturdays')
-    st.sidebar.write('The current number of saturdays is ', saturday)
     sunday = st.sidebar.number_input('Insert number of sundays')
-    st.sidebar.write('The current number of sundays is ', sunday)
     
     #weekday=251
     #saturday=52
