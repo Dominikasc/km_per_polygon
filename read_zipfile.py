@@ -251,14 +251,14 @@ if uploaded_files != []:
     assigned_patterns2 = assigned_patterns1.groupby(['route_short_name', 'aux_pattern']).aggregate({'nstops':'max','ntrips':'max','km_in_poly':'sum','km_per_year':'sum','pattern_dist':'max'}).reset_index().sort_values(by = ['route_short_name','ntrips'], ascending=False) # New
     assigned_patterns2.reset_index(inplace=True)
     assigned_patterns2.drop('index', axis=1, inplace=True)
-    
+
     # Assigned patterns depending on the total trips for both directions combined
     for r in assigned_patterns2.route_short_name.unique():
         aux = assigned_patterns2.loc[assigned_patterns2.route_short_name==r]
         pattern_list = list(ABC[0:len(aux)])
         assigned_patterns2.loc[assigned_patterns2.route_short_name==r, 'pattern'] = pattern_list
 
-     # Merge dataframe with the real patterns and df with the municipalities
+    # Merge dataframe with the real patterns and df with the municipalities
     df1 = assigned_patterns1[['route_short_name', 'aux_pattern', 'shape_id', 'NAME', 'km_in_poly','geometry','km_per_year']] # Added km_per_year
     df2 = assigned_patterns2[['route_short_name', 'aux_pattern', 'pattern']]
     
@@ -270,7 +270,7 @@ if uploaded_files != []:
     
     # This is what I need to draw the map
     # I have the fields to filter by route and county
-    gdf_intersections = gpd.GeoDataFrame(data = assigned_patterns1[['route_short_name', 'NAME', 'pattern']], geometry = assigned_patterns1.geometry)
+    gdf_intersections = gpd.GeoDataFrame(data = try_this[['route_short_name', 'NAME', 'pattern']], geometry = try_this.geometry)
     gdf_intersections.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern'), inplace=True)
     
     # -------------------------------------------------------------------------------
