@@ -338,7 +338,8 @@ if uploaded_files != []:
         ].__geo_interface__
     
     # Assign color to patterns
-    #color_lookup = pdk.data_utils.assign_random_colors(line_intersections['Pattern'])
+    color_lookup = pdk.data_utils.assign_random_colors(line_intersections['Pattern'])
+    line_intersections['color'] = line_intersections.apply(lambda row: color_lookup.get(row['Pattern']), axis=1)
     
     # Filter the shapes that passed the routes filters
     aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
@@ -414,7 +415,8 @@ if uploaded_files != []:
                     "GeoJsonLayer", 
                     data=line_intersections, 
                     #get_fill_color=[231,51,55],
-                    get_line_color = [200,51,55],
+                    #get_line_color = [200,51,55],
+                    get_line_color = line_intersections['color'],
                     opacity=1,
                     pickable=False,
                     extruded=False,
