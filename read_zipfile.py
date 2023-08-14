@@ -339,8 +339,8 @@ if uploaded_files != []:
         ].__geo_interface__
     
     # Assign color to patterns
-    color_lookup = pdk.data_utils.assign_random_colors(line_intersections['Pattern'])
-    line_intersections['color'] = line_intersections.apply(lambda row: color_lookup.get(row['Pattern']), axis=1)
+    color_lookup = pdk.data_utils.assign_random_colors(line_intersections['pattern'])
+    line_intersections['color'] = line_intersections.apply(lambda row: color_lookup.get(row['pattern']), axis=1)
     
     # Filter the shapes that passed the routes filters
     aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
