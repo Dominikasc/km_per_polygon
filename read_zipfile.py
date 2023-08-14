@@ -74,9 +74,11 @@ if uploaded_files != []:
             polys = polys.to_crs(epsg=4326)
 
     # Define number of days
-    weekday = st.sidebar.number_input('Insert number of weekdays')
-    saturday = st.sidebar.number_input('Insert number of saturdays')
-    sunday = st.sidebar.number_input('Insert number of sundays')
+    # Define number of days
+
+    weekday = st.sidebar.number_input('Insert number of weekdays', value=251)
+    saturday = st.sidebar.number_input('Insert number of saturdays', value=52)
+    sunday = st.sidebar.number_input('Insert number of sundays', value=62)
     
     #weekday=251
     #saturday=52
@@ -238,7 +240,7 @@ if uploaded_files != []:
     intersection1 = pd.merge(intersection, polys[['NAME']], left_on='poly_index', right_on=polys.index, how='left')
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
     
-     # Get actual number of stops, trips, trips per year and pattern distance
+    # Get actual number of stops, trips, trips per year and pattern distance
     assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern']).aggregate({'nstops':'sum','pattern_dist':'sum','ntrips':'sum','trips_per_year':'sum',}).reset_index()
     assigned_patterns = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops','pattern_dist','ntrips','trips_per_year'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
 
