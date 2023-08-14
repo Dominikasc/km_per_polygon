@@ -268,10 +268,14 @@ if uploaded_files != []:
     table = try_this.pivot_table(['km_in_poly','km_per_year'], index=['route_short_name', 'pattern', 'NAME'], aggfunc='sum').reset_index() # Added km_per_year
     table.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern', km_in_poly = 'Kilometers per county', km_per_year = 'Kilometers per year'), inplace=True)
     
+    # Assign color to patterns
+    color_lookup = pdk.data_utils.assign_random_colors(try_this['pattern'])
+    try_this['color'] = try_this.apply(lambda row: color_lookup.get(row['pattern']), axis=1)
+
     # This is what I need to draw the map
     # I have the fields to filter by route and county
-    gdf_intersections = gpd.GeoDataFrame(data = try_this[['route_short_name', 'NAME', 'pattern']], geometry = try_this.geometry)
-    gdf_intersections.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern'), inplace=True)
+    gdf_intersections = gpd.GeoDataFrame(data = try_this[['route_short_name', 'NAME', 'pattern','color']], geometry = try_this.geometry)
+    gdf_intersections.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern', color = 'Color'), inplace=True)
     
     # -------------------------------------------------------------------------------
     # --------------------------- APP -----------------------------------------------
@@ -335,12 +339,8 @@ if uploaded_files != []:
     line_intersections = gdf_intersections.loc[
         (gdf_intersections['Route'].isin(filter_routes))&
         (gdf_intersections['County'].isin(filter_polys))&
-        (gdf_intersections['Pattern'])
+        (gdf_intersections['Color'])
         ].__geo_interface__
-    
-    # Assign color to patterns
-    color_lookup = pdk.data_utils.assign_random_colors(line_intersections['pattern'])
-    line_intersections['color'] = line_intersections.apply(lambda row: color_lookup.get(row['pattern']), axis=1)
     
     # Filter the shapes that passed the routes filters
     aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
@@ -417,7 +417,7 @@ if uploaded_files != []:
                     data=line_intersections, 
                     #get_fill_color=[231,51,55],
                     #get_line_color = [200,51,55],
-                    get_line_color = line_intersections['color'],
+                    get_line_color = line_intersections['Color'],
                     opacity=1,
                     pickable=False,
                     extruded=False,
