@@ -338,8 +338,7 @@ if uploaded_files != []:
     # Filter line intersections that passed the filters
     line_intersections = gdf_intersections.loc[
         (gdf_intersections['Route'].isin(filter_routes))&
-        (gdf_intersections['County'].isin(filter_polys))&
-        (gdf_intersections['Color'])
+        (gdf_intersections['County'].isin(filter_polys))
         ].__geo_interface__
     
     # Filter the shapes that passed the routes filters
@@ -417,7 +416,7 @@ if uploaded_files != []:
                     data=line_intersections, 
                     #get_fill_color=[231,51,55],
                     #get_line_color = [200,51,55],
-                    get_line_color = line_intersections['Color'],
+                    get_line_color = line_intersections['color'],
                     opacity=1,
                     pickable=False,
                     extruded=False,
