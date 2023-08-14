@@ -270,8 +270,8 @@ if uploaded_files != []:
     
     # This is what I need to draw the map
     # I have the fields to filter by route and county
-    gdf_intersections = gpd.GeoDataFrame(data = assigned_patterns1[['route_short_name', 'pattern', 'NAME']], geometry = assigned_patterns1.geometry)
-    gdf_intersections.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern'), inplace=True)
+    gdf_intersections = gpd.GeoDataFrame(data = assigned_patterns1[['route_short_name', 'NAME']], geometry = assigned_patterns1.geometry)
+    gdf_intersections.rename(columns = dict(route_short_name = 'Route', NAME = 'County'), inplace=True)
     
     # -------------------------------------------------------------------------------
     # --------------------------- APP -----------------------------------------------
@@ -318,7 +318,7 @@ if uploaded_files != []:
     # Filter polygons that passed the filter
     # Merge the intersection with the number of trips per shape
     intersection_aux = pd.merge(trips, intersection1, how='right')
-    intersection2 = intersection_aux.drop_duplicates(subset=['route_short_name', 'NAME','pattern']).loc[:,['route_short_name', 'NAME','pattern']].reset_index()
+    intersection2 = intersection_aux.drop_duplicates(subset=['route_short_name', 'NAME']).loc[:,['route_short_name', 'NAME']].reset_index()
     
     # Add polygons geometries
     intersection2 = pd.merge(intersection2, polys, left_on='NAME', right_on='NAME', how='left')
@@ -338,7 +338,7 @@ if uploaded_files != []:
         ].__geo_interface__
     
     # Assign color to patterns
-    color_lookup = pdk.data_utils.assign_random_colors(line_intersections['Pattern'])
+    #color_lookup = pdk.data_utils.assign_random_colors(line_intersections['Pattern'])
     
     # Filter the shapes that passed the routes filters
     aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
