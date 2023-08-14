@@ -270,8 +270,8 @@ if uploaded_files != []:
     
     # This is what I need to draw the map
     # I have the fields to filter by route and county
-    gdf_intersections = gpd.GeoDataFrame(data = assigned_patterns1[['route_short_name', 'NAME']], geometry = assigned_patterns1.geometry)
-    gdf_intersections.rename(columns = dict(route_short_name = 'Route', NAME = 'County'), inplace=True)
+    gdf_intersections = gpd.GeoDataFrame(data = assigned_patterns1[['route_short_name', 'NAME', 'pattern']], geometry = assigned_patterns1.geometry)
+    gdf_intersections.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern'), inplace=True)
     
     # -------------------------------------------------------------------------------
     # --------------------------- APP -----------------------------------------------
