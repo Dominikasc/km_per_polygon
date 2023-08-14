@@ -150,7 +150,7 @@ if uploaded_files != []:
 
    
     trips_per_shape = trips_per_shape.groupby(['route_id','shape_id','direction_id']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','trips_per_year':'sum'}).reset_index() # added service_id
-    trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id','startcoord','endcoord']], how='left') # added start/end coordinates
+    trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id']], how='left') # added start/end coordinates
 
     # Number of stops per shape
     aux = stop_times[['route_id', 'stop_id', 'stop_sequence', 'trip_id', 'shape_id','shape_dist_traveled']] # No need to merge with trips, data already merged in line 66
