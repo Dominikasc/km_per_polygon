@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Apr 20 09:13:18 2021
-Modified on Mon Jun 19git 2023
+Modified on Mon Jun 19 2023
 
 @author: santi
 @coauthor: dominika
@@ -12,10 +12,17 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 import geopandas as gpd
+import math
 
+import shapely #NEW
 from shapely.geometry import LineString
+from shapely.geometry import Point #NEW
+import pyproj #NEW
+
 import itertools
 import base64
+import string #NEW
+from string import ascii_uppercase #NEW
 #from glob import iglob
 #import glob
 
@@ -81,6 +88,19 @@ if uploaded_files != []:
     # I need the route_short_name in trips
     trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
     
+    # I need the start and end coordinate in shapes
+
+    def startcoord(row):
+        first = Point(row['geometry'].coords[0])
+        return first
+
+    def endcoord(row):
+        last = Point(row['geometry'].coords[-1])
+        return last
+
+    shapes['startcoord'] = shapes.apply(lambda row: startcoord(row), axis=1)
+    shapes['endcoord'] = shapes.apply(lambda row: endcoord(row), axis=1)
+
     # I need the intersection and also to keep the shape_id and poly_id or index
     # Get the intersection betwee each shape and each polygon
     intersection_geo = [s.intersection(p) for s in shapes.geometry for p in polys.geometry]
@@ -125,8 +145,11 @@ if uploaded_files != []:
 
     trips_per_shape = pd.merge(trips_per_shape0, calendar[['service_id','days_per_year']], how='left')
     trips_per_shape['trips_per_year'] = trips_per_shape['ntrips']*trips_per_shape['days_per_year']
-    trips_per_shape = trips_per_shape.groupby(['route_id','shape_id','direction_id']).aggregate({'ntrips':'sum','trips_per_year':'sum'}).reset_index()
-    
+
+   
+    trips_per_shape = trips_per_shape.groupby(['route_id','shape_id','direction_id']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','trips_per_year':'sum'}).reset_index() # added service_id
+    trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id','startcoord','endcoord']], how='left') # added start/end coordinates
+
     # Number of stops per shape
     aux = stop_times[['route_id', 'stop_id', 'stop_sequence', 'trip_id', 'shape_id','shape_dist_traveled']] # No need to merge with trips, data already merged in line 66
     aux1 = aux.groupby(['route_id', 'trip_id','shape_id'])['shape_dist_traveled'].max().reset_index() # add shapes_dist_travelled for accurate km in pattern sorting
@@ -149,9 +172,23 @@ if uploaded_files != []:
     direction_0 = patterns.loc[patterns.direction_id == 0].reset_index().drop('index', axis=1)
     direction_1 = patterns.loc[patterns.direction_id == 1].reset_index().drop('index', axis=1)
     
+    # Haversine formula
+
+    def distancehav(point1, point2):
+        dLat = math.radians(point2.y) - math.radians(point1.y)
+        dLon = math.radians(point2.x) - math.radians(point1.x)
+        a = math.sin(dLat/2) * math.sin(dLat/2) + math.cos(math.radians(point1.y)) * math.cos(math.radians(point2.y)) * math.sin(dLon/2) * math.sin(dLon/2)
+        distance = 6371 * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        distance = distance * 1000
+        return distance
+
     # Assign patterns - 
     # These are meant to match shapes in opposite directions under the same pattern 
     # But they are not the final pattern name
+    # 1. whether the start & end locations exactly match (i.e. does the inbound direction end at the start of the outbound direction, and vice versa)
+    # 2. whether the start & end locations are within 400m of each other
+    # 3. the difference in the number of trips on each day of service
+
     assigned_patterns = pd.DataFrame()
 
     for r in patterns.route_short_name.unique():
@@ -165,25 +202,32 @@ if uploaded_files != []:
             longer = t1.reset_index()
             shorter = t0.reset_index()
     
-        abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    
+        ABC = list(ascii_uppercase) + [letter1+letter2 for letter1 in ascii_uppercase for letter2 in ascii_uppercase]
+
         longer['aux_pattern'] = ''
         shorter['aux_pattern'] = ''
     
         for i in range(len(longer)):
-            longer.loc[i, 'aux_pattern'] = abc[i]
-    
-            ntrips = longer.iloc[i]['ntrips']
-            pattern_dist = longer.iloc[i]['pattern_dist']
+            longer.loc[i, 'aux_pattern'] = ABC[i]
             nstops = longer.iloc[i]['nstops']
+            start_longer = longer.iloc[i]['startcoord']
+            end_longer = longer.iloc[i]['endcoord']
+            servicedays_longer = longer.iloc[i]['service_id']
     
             for j in range(len(shorter)):
-        #         condition1 = ntrips*0.95 <= shorter.iloc[j]['ntrips'] <= ntrips*1.05
-                condition2 = pattern_dist*0.7 <= shorter.iloc[j]['pattern_dist'] <= pattern_dist*1.3 # 0.95 is too conservative, patterns not found correctly
+                start_shorter = shorter.iloc[j]['startcoord']
+                end_shorter = shorter.iloc[j]['endcoord']
+                servicedays_shorter = shorter.iloc[j]['service_id']
+                condition_start = distancehav(start_shorter, end_longer) <= 400
+                condition_end = distancehav(start_longer, end_shorter) <= 400
+                some_days_in_common = len([id for id in servicedays_longer if id in servicedays_shorter])>0
                 condition3 = nstops*0.95 <= shorter.iloc[j]['nstops'] <= nstops*1.05
-    
-                if condition2 & condition3:
-                    shorter.loc[j, 'aux_pattern'] = abc[i]
+
+                if condition_start & condition_end & some_days_in_common & condition3: 
+                    shorter.loc[j, 'aux_pattern'] = ABC[i]
+                elif shorter.loc[j, 'aux_pattern'] == "":
+                    shorter.loc[j, 'aux_pattern'] = ABC[-i] # to assign a pattern for all unmatched
+                    break
 
         assigned_patterns = pd.concat([assigned_patterns,longer])
         assigned_patterns = pd.concat([assigned_patterns,shorter])
