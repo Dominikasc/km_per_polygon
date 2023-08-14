@@ -28,7 +28,7 @@ from string import ascii_uppercase #NEW
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Drag and drop files here')
-uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_times.txt, shapes.txt and polygons.geojson', accept_multiple_files=True, type=['txt','geojson'])
+uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_times.txt, calendar.txt, shapes.txt and polygons.geojson', accept_multiple_files=True, type=['txt','geojson'])
 
 # Get the polygons
 # polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/polygons.geojson")
@@ -143,7 +143,7 @@ if uploaded_files != []:
     trips_per_shape0 = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id','service_id'], aggfunc='count').reset_index()
     trips_per_shape0.rename(columns = dict(trip_id = 'ntrips'), inplace=True)
     shapes.crs = {'init':'epsg:4326'}
-    shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326
+    shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326 # CRS.from_epsg() --> deprecation warning
 
     trips_per_shape = pd.merge(trips_per_shape0, calendar[['service_id','days_per_year']], how='left')
     trips_per_shape['trips_per_year'] = trips_per_shape['ntrips']*trips_per_shape['days_per_year']
@@ -255,7 +255,7 @@ if uploaded_files != []:
     # Assigned patterns depending on the total trips for both directions combined
     for r in assigned_patterns2.route_short_name.unique():
         aux = assigned_patterns2.loc[assigned_patterns2.route_short_name==r]
-        pattern_list = list(abc[0:len(aux)])
+        pattern_list = list(ABC[0:len(aux)])
         assigned_patterns2.loc[assigned_patterns2.route_short_name==r, 'pattern'] = pattern_list
 
      # Merge dataframe with the real patterns and df with the municipalities
