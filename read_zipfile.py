@@ -284,9 +284,10 @@ if uploaded_files != []:
     # Select filters
     poly_names_list = list(gdf_intersections['County'].unique())
     lines_names_list = list(gdf_intersections['Route'].unique())
-    
+    lines_names_list = [str(x) for x in lines_names_list]
+
     poly_names_list.sort()
-    lines_names_list.astype(str).sort()
+    lines_names_list.sort()
     
     with col1:
         st.subheader('Filters')
