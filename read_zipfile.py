@@ -286,7 +286,7 @@ if uploaded_files != []:
     lines_names_list = list(gdf_intersections['Route'].unique())
     
     poly_names_list.sort()
-    lines_names_list.sort()
+    lines_names_list.astype(str).sort()
     
     with col1:
         st.subheader('Filters')
