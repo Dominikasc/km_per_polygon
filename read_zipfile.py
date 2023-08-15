@@ -339,7 +339,7 @@ if uploaded_files != []:
     line_intersections_df = gdf_intersections.loc[
         (gdf_intersections['Route'].isin(filter_routes))&
         (gdf_intersections['County'].isin(filter_polys))
-        ].__geo_interface__
+        ]
     line_intersections = line_intersections_df.__geo_interface__
     
     # Filter the shapes that passed the routes filters
