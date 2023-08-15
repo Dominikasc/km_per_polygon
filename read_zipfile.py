@@ -399,10 +399,10 @@ if uploaded_files != []:
                 pdk.Layer(
                     "GeoJsonLayer", 
                     data=shapes_filtered, 
-                    get_line_color = shapes_filtered['color'],
+                    #get_line_color = shapes_filtered['color'],
                     #get_fill_color=shapes_filtered['color'],
                     #get_fill_color=[231,51,55],
-                    #get_line_color=[212, 174, 174],#[50,50,50],
+                    get_line_color=[212, 174, 174],#[50,50,50],
                     opacity=.8,
                     pickable=False,
                     extruded=True,
