@@ -345,6 +345,7 @@ if uploaded_files != []:
     aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
     aux = pd.merge(aux, routes[['route_id', 'route_short_name']], how='left')
     shapes_filtered = pd.merge(shapes ,aux, how='left')
+    shapes_filtered = pd.merge(shapes_filtered, try_this[['shape_id','route_short_name','color', 'pattern']], how='left')
     shapes_filtered = gpd.GeoDataFrame(data = shapes_filtered.drop('geometry', axis=1), geometry=shapes_filtered.geometry)
     shapes_filtered = shapes_filtered.loc[shapes_filtered.route_short_name.isin(filter_routes)]
     
@@ -398,8 +399,9 @@ if uploaded_files != []:
                 pdk.Layer(
                     "GeoJsonLayer", 
                     data=shapes_filtered, 
+                    get_line_color = shapes_filtered['color'],
                     # get_fill_color=[231,51,55],
-                    get_line_color=[212, 174, 174],#[50,50,50],
+                    #get_line_color=[212, 174, 174],#[50,50,50],
                     opacity=.8,
                     pickable=False,
                     extruded=True,
@@ -416,7 +418,7 @@ if uploaded_files != []:
                     data=line_intersections, 
                     #get_fill_color=[231,51,55],
                     #get_line_color = [200,51,55],
-                    get_line_color = line_intersections['color'],
+                    get_line_color = line_intersections['Color'],
                     opacity=1,
                     pickable=False,
                     extruded=False,
