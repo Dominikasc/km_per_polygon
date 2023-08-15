@@ -336,10 +336,11 @@ if uploaded_files != []:
         ]
         
     # Filter line intersections that passed the filters
-    line_intersections = gdf_intersections.loc[
+    line_intersections_df = gdf_intersections.loc[
         (gdf_intersections['Route'].isin(filter_routes))&
         (gdf_intersections['County'].isin(filter_polys))
         ].__geo_interface__
+    line_intersections = line_intersections_df.__geo_interface__
     
     # Filter the shapes that passed the routes filters
     aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
@@ -419,8 +420,8 @@ if uploaded_files != []:
                     data=line_intersections, 
                     #get_fill_color=[231,51,55],
                     #get_line_color = [200,51,55],
-                    #get_line_color = line_intersections['Color'],
-                    get_line_color = line_intersections.properties.Color,
+                    get_line_color = line_intersections_df['Color'],
+                    #get_line_color = line_intersections.properties.Color,
                     #get_fill_color=line_intersections['Color'],
                     opacity=1,
                     pickable=False,
