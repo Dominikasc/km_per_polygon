@@ -306,7 +306,7 @@ if uploaded_files != []:
         filter_routes = st.multiselect('Linie', lines_names_list)
         filter_patterns = st.multiselect('Variante', patterns_names_list)
         st.subheader('Pivot Dimensionen')
-        group_by = st.multiselect('Group by', ['Gebiet', 'Linie', 'Variante'], default = ['Gebiet', 'Linie', 'Variante'])
+        group_by = st.multiselect('Gruppieren', ['Gebiet', 'Linie', 'Variante'], default = ['Gebiet', 'Linie', 'Variante'])
         
     if filter_polys == []:
         filter_polys = poly_names_list
