@@ -28,10 +28,10 @@ from string import ascii_uppercase #NEW
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Drag and drop files here')
-uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_times.txt, calendar.txt, shapes.txt and polygons.geojson', accept_multiple_files=True, type=['txt','geojson'])
+uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_times.txt, calendar.txt, shapes.txt and features.geojson', accept_multiple_files=True, type=['txt','geojson'])
 
 # Get the polygons
-# polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/polygons.geojson")
+# polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/features.geojson")
 # polys = gpd.read_file(next(iglob('*.csv')))
 # polylist = glob.glob("*.geojson")  # Get all geojson files in the current folder
 
@@ -69,7 +69,7 @@ if uploaded_files != []:
             aux = gpd.GeoDataFrame(data=aux[['shape_id']], geometry = gpd.points_from_xy(x = aux.shape_pt_lon, y=aux.shape_pt_lat))
             lines = [LineString(list(aux.loc[aux.shape_id==s, 'geometry']))  for s in aux.shape_id.unique()]
             shapes = gpd.GeoDataFrame(data=aux.shape_id.unique(), geometry = lines, columns = ['shape_id'])
-        elif name == 'polygons.geojson':     # Get the polygons, need to be uploaded as Geojson, not sure if this works
+        elif name == 'features.geojson':     # Get the polygons, need to be uploaded as Geojson, not sure if this works
             polys = gpd.read_file(file)
             polys = polys.to_crs(epsg=4326)
 
@@ -237,7 +237,7 @@ if uploaded_files != []:
 
 
     # Intersection geometries I need
-    intersection1 = pd.merge(intersection, polys[['NAME']], left_on='poly_index', right_on=polys.index, how='left')
+    intersection1 = pd.merge(intersection, polys[['name']], left_on='poly_index', right_on=polys.index, how='left')
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
     
     # Get actual number of stops, trips, trips per year and pattern distance
@@ -259,14 +259,14 @@ if uploaded_files != []:
         assigned_patterns2.loc[assigned_patterns2.route_short_name==r, 'pattern'] = pattern_list
 
     # Merge dataframe with the real patterns and df with the municipalities
-    df1 = assigned_patterns1[['route_short_name', 'aux_pattern', 'shape_id', 'NAME', 'km_in_poly','geometry','km_per_year']] # Added km_per_year
+    df1 = assigned_patterns1[['route_short_name', 'aux_pattern', 'shape_id', 'name', 'km_in_poly','geometry','km_per_year']] # Added km_per_year
     df2 = assigned_patterns2[['route_short_name', 'aux_pattern', 'pattern']]
     
     # This is what I need to show the table
     # I have the fields to filter by route and county
     try_this = pd.merge(df1, df2, how='left')
-    table = try_this.pivot_table(['km_in_poly','km_per_year'], index=['route_short_name', 'pattern', 'NAME'], aggfunc='sum').reset_index() # Added km_per_year
-    table.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern', km_in_poly = 'Kilometers per county', km_per_year = 'Kilometers per year'), inplace=True)
+    table = try_this.pivot_table(['km_in_poly','km_per_year'], index=['route_short_name', 'pattern', 'name'], aggfunc='sum').reset_index() # Added km_per_year
+    table.rename(columns = dict(route_short_name = 'Linie', NAME = 'Gebiet', pattern = 'Variante', km_in_poly = 'Kilometers per county', km_per_year = 'Kilometers per year'), inplace=True)
     
     # Assign color to patterns
     color_lookup = pdk.data_utils.assign_random_colors(try_this['pattern'])
@@ -274,8 +274,8 @@ if uploaded_files != []:
 
     # This is what I need to draw the map
     # I have the fields to filter by route and county
-    gdf_intersections = gpd.GeoDataFrame(data = try_this[['route_short_name', 'NAME', 'pattern','color']], geometry = try_this.geometry)
-    gdf_intersections.rename(columns = dict(route_short_name = 'Route', NAME = 'County', pattern = 'Pattern', color = 'Color'), inplace=True)
+    gdf_intersections = gpd.GeoDataFrame(data = try_this[['route_short_name', 'name', 'pattern','color']], geometry = try_this.geometry)
+    gdf_intersections.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', pattern = 'Variante', color = 'Color'), inplace=True)
     
     # -------------------------------------------------------------------------------
     # --------------------------- APP -----------------------------------------------
@@ -286,19 +286,19 @@ if uploaded_files != []:
     col1, col2, col3= st.columns((1, 2 ,3))
         
     # Select filters
-    poly_names_list = list(gdf_intersections['County'].unique())
-    lines_names_list = list(gdf_intersections['Route'].unique())
+    poly_names_list = list(gdf_intersections['Gebiet'].unique())
+    lines_names_list = list(gdf_intersections['Linie'].unique())
     lines_names_list = [str(x) for x in lines_names_list]
 
     poly_names_list.sort()
     lines_names_list.sort()
     
     with col1:
-        st.subheader('Filters')
-        filter_polys = st.multiselect('Counties', poly_names_list)
-        filter_routes = st.multiselect('Routes', lines_names_list)
-        st.subheader('Pivot dimensions')
-        group_by = st.multiselect('Group by', ['County', 'Route', 'Pattern'], default = ['County', 'Route', 'Pattern'])
+        st.subheader('Filter')
+        filter_polys = st.multiselect('Gebiet', poly_names_list)
+        filter_routes = st.multiselect('Linie', lines_names_list)
+        st.subheader('Pivot Dimensionen')
+        group_by = st.multiselect('Group by', ['Gebiet', 'Linie', 'Variante'], default = ['Gebiet', 'Linie', 'Variante'])
         
     if filter_polys == []:
         filter_polys = poly_names_list
@@ -310,8 +310,8 @@ if uploaded_files != []:
     # Aggregate data as indicated in Pivot dimensions    
     # Filter data
     table_poly = table.loc[
-        (table['Route'].isin(filter_routes))&
-        (table['County'].isin(filter_polys))
+        (table['Linie'].isin(filter_routes))&
+        (table['Gebiet'].isin(filter_polys))
         ]
     table_poly = table_poly.pivot_table(['Kilometers per county','Kilometers per year'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
 
@@ -322,23 +322,23 @@ if uploaded_files != []:
     # Filter polygons that passed the filter
     # Merge the intersection with the number of trips per shape
     intersection_aux = pd.merge(trips, intersection1, how='right')
-    intersection2 = intersection_aux.drop_duplicates(subset=['route_short_name', 'NAME']).loc[:,['route_short_name', 'NAME']].reset_index()
+    intersection2 = intersection_aux.drop_duplicates(subset=['route_short_name', 'name']).loc[:,['route_short_name', 'name']].reset_index()
     
     # Add polygons geometries
-    intersection2 = pd.merge(intersection2, polys, left_on='NAME', right_on='NAME', how='left')
+    intersection2 = pd.merge(intersection2, polys, left_on='name', right_on='name', how='left')
     
     # This is what I need to select the polygons that passed the route and county filters
-    route_polys = gpd.GeoDataFrame(data=intersection2[['route_short_name', 'NAME']], geometry=intersection2.geometry)
+    route_polys = gpd.GeoDataFrame(data=intersection2[['route_short_name', 'name']], geometry=intersection2.geometry)
     
     filtered = route_polys.loc[
-        (route_polys['NAME'].isin(filter_polys))&
+        (route_polys['name'].isin(filter_polys))&
         (route_polys.route_short_name.isin(filter_routes))
         ]
         
     # Filter line intersections that passed the filters
     line_intersections = gdf_intersections.loc[
-        (gdf_intersections['Route'].isin(filter_routes))&
-        (gdf_intersections['County'].isin(filter_polys))
+        (gdf_intersections['Linie'].isin(filter_routes))&
+        (gdf_intersections['Gebiet'].isin(filter_polys))
         ].__geo_interface__
     
     # Filter the shapes that passed the routes filters
@@ -403,7 +403,7 @@ if uploaded_files != []:
                     #get_fill_color=shapes_filtered['color'],
                     #get_fill_color=[231,51,55],
                     get_line_color=[212, 174, 174],#[50,50,50],
-                    opacity=.6,
+                    opacity=.8,
                     pickable=False,
                     extruded=True,
                     converage=1,
@@ -421,7 +421,7 @@ if uploaded_files != []:
                     #get_line_color = [200,51,55],
                     get_line_color = "properties.Color",
                     #get_fill_color=line_intersections['Color'],
-                    opacity=.8,
+                    opacity=1,
                     pickable=False,
                     extruded=False,
                     converage=1,
