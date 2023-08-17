@@ -289,14 +289,19 @@ if uploaded_files != []:
     poly_names_list = list(gdf_intersections['Gebiet'].unique())
     lines_names_list = list(gdf_intersections['Linie'].unique())
     lines_names_list = [str(x) for x in lines_names_list]
+    patterns_names_list = list(gdf_intersections['Variante'].unique())
+    patterns_names_list = [str(x) for x in patterns_names_list]
+
 
     poly_names_list.sort()
     lines_names_list.sort()
+    patterns_names_list.sort()
     
     with col1:
         st.subheader('Filter')
         filter_polys = st.multiselect('Gebiet', poly_names_list)
         filter_routes = st.multiselect('Linie', lines_names_list)
+        filter_patterns = st.multiselect('Variante', patterns_names_list)
         st.subheader('Pivot Dimensionen')
         group_by = st.multiselect('Group by', ['Gebiet', 'Linie', 'Variante'], default = ['Gebiet', 'Linie', 'Variante'])
         
@@ -305,13 +310,17 @@ if uploaded_files != []:
         
     if filter_routes == []:
         filter_routes = lines_names_list
-        
+
+    if filter_patterns == []:
+        filter_patterns = patterns_names_list
+
     # Work for the datatable
     # Aggregate data as indicated in Pivot dimensions    
     # Filter data
     table_poly = table.loc[
         (table['Linie'].isin(filter_routes))&
-        (table['Gebiet'].isin(filter_polys))
+        (table['Gebiet'].isin(filter_polys))&
+        (table['Variante'].isin(filter_patterns))
         ]
     table_poly = table_poly.pivot_table(['Kilometers per county','Kilometers per year'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
 
@@ -338,7 +347,8 @@ if uploaded_files != []:
     # Filter line intersections that passed the filters
     line_intersections = gdf_intersections.loc[
         (gdf_intersections['Linie'].isin(filter_routes))&
-        (gdf_intersections['Gebiet'].isin(filter_polys))
+        (gdf_intersections['Gebiet'].isin(filter_polys))&
+        (gdf_intersections['Variante'].isin(filter_patterns))
         ].__geo_interface__
     
     # Filter the shapes that passed the routes filters
