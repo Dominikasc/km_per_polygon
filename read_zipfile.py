@@ -76,13 +76,13 @@ if uploaded_files != []:
     # Define number of days
     # Define number of days
 
-    weekday = st.sidebar.number_input('Insert number of weekdays', value=251)
+    monday = st.sidebar.number_input('Insert number of mondays', value=50)
+    tuesday = st.sidebar.number_input('Insert number of tuesdays', value=51)
+    wednesday = st.sidebar.number_input('Insert number of wednesdays', value=50)
+    thursday = st.sidebar.number_input('Insert number of thursdays', value=50)
+    friday = st.sidebar.number_input('Insert number of fridays', value=50)
     saturday = st.sidebar.number_input('Insert number of saturdays', value=52)
     sunday = st.sidebar.number_input('Insert number of sundays', value=62)
-    
-    #weekday=251
-    #saturday=52
-    #sunday =62
     
     # I need the route_id in stop_times
     stop_times = pd.merge(stop_times, trips, how='left')
@@ -131,7 +131,11 @@ if uploaded_files != []:
 
     # Add the number of days per year 
 
-    calendar.loc[calendar['monday']>0, 'days_per_year'] = weekday
+    calendar.loc[calendar['monday']>0, 'days_per_year'] = monday
+    calendar.loc[calendar['tuesday']>0, 'days_per_year'] = tuesday
+    calendar.loc[calendar['wednesday']>0, 'days_per_year'] = wednesday
+    calendar.loc[calendar['thursday']>0, 'days_per_year'] = thursday
+    calendar.loc[calendar['friday']>0, 'days_per_year'] = friday
     calendar.loc[calendar['saturday']>0, 'days_per_year'] = saturday
     calendar.loc[calendar['sunday']>0, 'days_per_year'] = sunday
 
