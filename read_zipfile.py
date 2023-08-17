@@ -27,8 +27,8 @@ from string import ascii_uppercase #NEW
 #import glob
 
 st.set_page_config(layout="wide")
-st.sidebar.header('Drag and drop files here')
-uploaded_files = st.sidebar.file_uploader('Upload routes.txt, trips.txt, stop_times.txt, calendar.txt, shapes.txt and features.geojson', accept_multiple_files=True, type=['txt','geojson'])
+st.sidebar.header('Datenupload')
+uploaded_files = st.sidebar.file_uploader('Laden Sie routes.txt, trips.txt, stop_times.txt, calendar.txt, shapes.txt und features.geojson aus Remix hoch', accept_multiple_files=True, type=['txt','geojson'])
 
 # Get the polygons
 # polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/features.geojson")
@@ -74,15 +74,14 @@ if uploaded_files != []:
             polys = polys.to_crs(epsg=4326)
 
     # Define number of days
-    # Define number of days
 
-    monday = st.sidebar.number_input('Insert number of mondays', value=50)
-    tuesday = st.sidebar.number_input('Insert number of tuesdays', value=51)
-    wednesday = st.sidebar.number_input('Insert number of wednesdays', value=50)
-    thursday = st.sidebar.number_input('Insert number of thursdays', value=50)
-    friday = st.sidebar.number_input('Insert number of fridays', value=50)
-    saturday = st.sidebar.number_input('Insert number of saturdays', value=52)
-    sunday = st.sidebar.number_input('Insert number of sundays', value=62)
+    monday = st.sidebar.number_input('Montage im Jahr', value=50)
+    tuesday = st.sidebar.number_input('Dienstage im Jahr', value=51)
+    wednesday = st.sidebar.number_input('Mittwoche im Jahr', value=50)
+    thursday = st.sidebar.number_input('Donnerstage im Jahr', value=50)
+    friday = st.sidebar.number_input('Freitage im Jahr', value=50)
+    saturday = st.sidebar.number_input('Samstage im Jahr', value=52)
+    sunday = st.sidebar.number_input('Sonntage im Jahr', value=62)
     
     # I need the route_id in stop_times
     stop_times = pd.merge(stop_times, trips, how='left')
@@ -270,7 +269,7 @@ if uploaded_files != []:
     # I have the fields to filter by route and county
     try_this = pd.merge(df1, df2, how='left')
     table = try_this.pivot_table(['km_in_poly','km_per_year'], index=['route_short_name', 'pattern', 'name'], aggfunc='sum').reset_index() # Added km_per_year
-    table.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', pattern = 'Variante', km_in_poly = 'Kilometers per county', km_per_year = 'Kilometers per year'), inplace=True)
+    table.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', pattern = 'Variante', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr'), inplace=True)
     
     # Assign color to patterns
     color_lookup = pdk.data_utils.assign_random_colors(try_this['pattern'])
@@ -285,7 +284,7 @@ if uploaded_files != []:
     # --------------------------- APP -----------------------------------------------
     # -------------------------------------------------------------------------------
     # LAYING OUT THE TOP SECTION OF THE APP
-    st.header("Bus kilometers per county (geographical boundary)")
+    st.header("Buskilometer pro Gebiet (geografische Grenze)")
     # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
     col1, col2, col3= st.columns((1, 2 ,3))
         
@@ -326,10 +325,10 @@ if uploaded_files != []:
         (table['Gebiet'].isin(filter_polys))&
         (table['Variante'].isin(filter_patterns))
         ]
-    table_poly = table_poly.pivot_table(['Kilometers per county','Kilometers per year'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
+    table_poly = table_poly.pivot_table(['Kilometer im Gebiet','Kilometer im Jahr'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
 
-    table_poly['Kilometers per county'] = table_poly['Kilometers per county'].apply(lambda x: str(round(x, 2)))     
-    table_poly['Kilometers per year'] = table_poly['Kilometers per year'].apply(lambda x: str(round(x, 2)))     
+    table_poly['Kilometer im Gebiet'] = table_poly['Kilometer im Gebiet'].apply(lambda x: str(round(x, 2)))     
+    table_poly['Kilometer im Jahr'] = table_poly['Kilometer im Jahr'].apply(lambda x: str(round(x, 2)))     
 
                 
     # Filter polygons that passed the filter
@@ -368,7 +367,7 @@ if uploaded_files != []:
     avg_lat = polys.geometry.centroid.y.mean()    
 
     with col2:
-        st.subheader('Total km per county = {}'.format(round(table_poly['Kilometers per county'].map(float).sum(),1)))
+        st.subheader('Gesamtkilometer pro Gebiet = {}'.format(round(table_poly['Kilometer im Gebiet'].map(float).sum(),1)))
                     # Download data
         def get_table_download_link(df):
             """Generates a link allowing the data in a given panda dataframe to be downloaded
