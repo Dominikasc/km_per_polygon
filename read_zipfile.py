@@ -376,7 +376,7 @@ if uploaded_files != []:
             """
             csv = df.to_csv(index=False)
             b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
-            href = f'<a href="data:file/csv;base64,{b64}">Download csv file</a>'
+            href = f'<a href="data:file/csv;base64,{b64}">CSV Datei exportieren</a>'
             return href
         
         st.dataframe(table_poly, 900, 600)
