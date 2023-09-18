@@ -366,10 +366,11 @@ if uploaded_files != []:
         (table['Gebiet'].isin(filter_polys))&
         (table['Variante'].isin(filter_patterns))
         ]
-    table_poly = table_poly.pivot_table(['Kilometer im Gebiet','Kilometer im Jahr'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
+    table_poly = table_poly.pivot_table(['Kilometer im Gebiet','Kilometer im Jahr','Stunden im Jahr'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
 
     table_poly['Kilometer im Gebiet'] = table_poly['Kilometer im Gebiet'].apply(lambda x: str(round(x, 2)))     
     table_poly['Kilometer im Jahr'] = table_poly['Kilometer im Jahr'].apply(lambda x: str(round(x, 2)))     
+    table_poly['Stunden im Jahr'] = table_poly['Stunden im Jahr'].apply(lambda x: str(round(x, 2)))     
 
                 
     # Filter polygons that passed the filter
