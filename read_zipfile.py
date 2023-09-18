@@ -24,6 +24,7 @@ import itertools
 import base64
 import glob #NEW
 import string #NEW
+import rtree #NEW
 from string import ascii_uppercase #NEW
 import datetime #NEW
 
