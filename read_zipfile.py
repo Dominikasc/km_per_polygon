@@ -30,7 +30,7 @@ import datetime #NEW
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Datenupload')
-uploaded_files = st.sidebar.file_uploader('Laden Sie routes.txt, trips.txt, stop_times.txt, calendar.txt, shapes.txt und features.geojson aus Remix hoch', accept_multiple_files=True, type=['txt','geojson'])
+uploaded_files = st.sidebar.file_uploader('Laden Sie routes.txt, stops.txt, trips.txt, stop_times.txt, calendar.txt, shapes.txt und features.geojson aus Remix hoch', accept_multiple_files=True, type=['txt','geojson'])
 
 # Get the polygons
 # polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/features.geojson")
@@ -65,6 +65,8 @@ if uploaded_files != []:
             stop_times = pd.read_csv(file)  
         elif name == 'calendar.txt':
             calendar = pd.read_csv(file)
+        elif name == 'stops.txt':
+            stops = pd.read_csv(file)
         elif name == 'shapes.txt':
             aux = pd.read_csv(file)
             aux.sort_values(by=['shape_id', 'shape_pt_sequence'], ascending=True, inplace=True)
@@ -103,7 +105,15 @@ if uploaded_files != []:
 
     shapes['startcoord'] = shapes.apply(lambda row: startcoord(row), axis=1)
     shapes['endcoord'] = shapes.apply(lambda row: endcoord(row), axis=1)
+    
+    # Create GDF from points
+    geometry = [Point(xy) for xy in zip(stops.stop_lon, stops.stop_lat)]
+    stops = stops.drop(['stop_lon', 'stop_lat'], axis=1)
+    stops_gdf = GeoDataFrame(stops, crs="EPSG:4326", geometry=geometry)
 
+    # Get polygon by stop
+    stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
+    stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','NAME']], how='left')
 
     # Get minutes per shape - needed to calculate driven hours in polygon
     stop_times['arrival_m'] = (stop_times['arrival_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['arrival_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['arrival_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
