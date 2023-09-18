@@ -278,8 +278,9 @@ if uploaded_files != []:
     assigned_patterns = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops','pattern_dist','ntrips','trips_per_year'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
 
     # Merge all variables (trips per year and km per year)
-    assigned_patterns1 = pd.merge(assigned_patterns[['route_short_name', 'shape_id','aux_pattern', 'ntrips','trips_per_year','nstops','pattern_dist']], intersection1, how='right') # Added trips per year
-    
+    assigned_patterns1 = pd.merge(assigned_patterns[['route_short_name','route_id','service_id', 'shape_id','aux_pattern', 'ntrips','trips_per_year','nstops','pattern_dist','direction_id']], intersection1, how='right') # Added trips per year
+    assigned_patterns1 = assigned_patterns1.dropna(subset=['service_id'])
+
     min_per_shape2 = min_per_shape2.dropna(subset=['service_id'])
     assigned_patterns1.service_id = assigned_patterns1.service_id.apply(tuple)
     min_per_shape2.service_id = min_per_shape2.service_id.apply(tuple)
