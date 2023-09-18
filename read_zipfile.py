@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Apr 20 09:13:18 2021
-Modified on Mon Jun 19 2023
+Modified on Mon Sep 18 2023
 
 @author: santi
 @coauthor: dominika
@@ -23,6 +23,8 @@ import itertools
 import base64
 import string #NEW
 from string import ascii_uppercase #NEW
+import datetime #NEW
+
 #from glob import iglob
 #import glob
 
@@ -102,12 +104,27 @@ if uploaded_files != []:
     shapes['startcoord'] = shapes.apply(lambda row: startcoord(row), axis=1)
     shapes['endcoord'] = shapes.apply(lambda row: endcoord(row), axis=1)
 
+
+    # Get minutes per shape - needed to calculate driven hours in polygon
+    stop_times['arrival_m'] = (stop_times['arrival_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['arrival_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['arrival_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
+    min_per_shape = stop_times.groupby(['trip_id','shape_id','NAME','route_id','service_id','direction_id']).aggregate({'arrival_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x)}).reset_index()
+    min_per_shape['arrival_m'] = min_per_shape.arrival_m.apply(lambda x: 0.5 if x == 0 else x)
+
+    min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.arrival_m)/(1000/60)
+    min_per_shape1 = min_per_shape.groupby(['shape_id','NAME','route_id','service_id','direction_id']).aggregate({'trip_id':'count','arrival_m':'sum','poly_kmh':'mean'}).reset_index()
+    min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','NAME']).aggregate({'service_id':lambda x: list(x),'trip_id':'sum','arrival_m':'sum','poly_kmh':'mean'}).reset_index()
+
+    min_per_shape2 = min_per_shape2.rename(columns={"trip_id": "ntrips"})
+
+    # Calculate fallback speed by polygon
+    min_per_shape3 = min_per_shape2.groupby(['NAME']).aggregate({'poly_kmh':'mean'}).reset_index()
+    dict_min_per_shape = min_per_shape3.set_index('NAME')['poly_kmh'].to_dict()
+
     # I need the intersection and also to keep the shape_id and poly_id or index
     # Get the intersection betwee each shape and each polygon
     intersection_geo = [s.intersection(p) for s in shapes.geometry for p in polys.geometry]
     intersection = gpd.GeoDataFrame(geometry=intersection_geo)
     intersection.crs = {'init':'epsg:4326'}
-    
     
     # Get the shape_ids repeated as many times as polygons there are
     shape_ids = [[s]*len(polys) for s in shapes.shape_id]
@@ -244,14 +261,24 @@ if uploaded_files != []:
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
     
     # Get actual number of stops, trips, trips per year and pattern distance
-    assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern']).aggregate({'nstops':'sum','pattern_dist':'sum','ntrips':'sum','trips_per_year':'sum',}).reset_index()
+    assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern','direction_id']).aggregate({'nstops':'sum','pattern_dist':'sum','ntrips':'sum','trips_per_year':'sum',}).reset_index()
     assigned_patterns = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops','pattern_dist','ntrips','trips_per_year'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
 
-    # Merge all variables
+    # Merge all variables (trips per year and km per year)
     assigned_patterns1 = pd.merge(assigned_patterns[['route_short_name', 'shape_id','aux_pattern', 'ntrips','trips_per_year','nstops','pattern_dist']], intersection1, how='right') # Added trips per year
-    assigned_patterns1['km_per_year'] = assigned_patterns1.km_in_poly * assigned_patterns1.trips_per_year     # Add km per year
+    
+    min_per_shape2 = min_per_shape2.dropna(subset=['service_id'])
+    assigned_patterns1.service_id = assigned_patterns1.service_id.apply(tuple)
+    min_per_shape2.service_id = min_per_shape2.service_id.apply(tuple)
+    assigned_patterns1 = pd.merge(assigned_patterns1, min_per_shape2,on=['route_id','service_id', 'shape_id','NAME','direction_id'],how='left') # Added poly_kmh
+    assigned_patterns1["poly_kmh"] = assigned_patterns1.poly_kmh.fillna(assigned_patterns1.NAME.map(dict_min_per_shape)) #fillna with fallback kmh (average per polygon)
+    assigned_patterns1['poly_m'] = (assigned_patterns1.km_in_poly / assigned_patterns1.poly_kmh)*60 # calculate minutes per polygon
 
-    assigned_patterns2 = assigned_patterns1.groupby(['route_short_name', 'aux_pattern']).aggregate({'nstops':'max','ntrips':'max','km_in_poly':'sum','km_per_year':'sum','pattern_dist':'max'}).reset_index().sort_values(by = ['route_short_name','ntrips'], ascending=False) # New
+    # Get km and hours per year 
+    assigned_patterns1['km_per_year'] = assigned_patterns1.km_in_poly * assigned_patterns1.trips_per_year     # Add km per year
+    assigned_patterns1['h_per_year'] = (assigned_patterns1.poly_m * assigned_patterns1.trips_per_year)/60     # Add hours per year
+
+    assigned_patterns2 = assigned_patterns1.groupby(['route_short_name', 'aux_pattern']).aggregate({'nstops':'max','ntrips_x':'max','km_in_poly':'sum','km_per_year':'sum','pattern_dist':'max','h_per_year':'sum'}).reset_index().sort_values(by = ['route_short_name','ntrips_x'], ascending=False) # New
     assigned_patterns2.reset_index(inplace=True)
     assigned_patterns2.drop('index', axis=1, inplace=True)
 
@@ -262,14 +289,14 @@ if uploaded_files != []:
         assigned_patterns2.loc[assigned_patterns2.route_short_name==r, 'pattern'] = pattern_list
 
     # Merge dataframe with the real patterns and df with the municipalities
-    df1 = assigned_patterns1[['route_short_name', 'aux_pattern', 'shape_id', 'name', 'km_in_poly','geometry','km_per_year']] # Added km_per_year
+    df1 = assigned_patterns1[['route_short_name', 'aux_pattern', 'shape_id', 'name', 'km_in_poly','geometry','km_per_year','h_per_year']] # Added km_per_year and h_per_year
     df2 = assigned_patterns2[['route_short_name', 'aux_pattern', 'pattern']]
     
     # This is what I need to show the table
     # I have the fields to filter by route and county
     try_this = pd.merge(df1, df2, how='left')
-    table = try_this.pivot_table(['km_in_poly','km_per_year'], index=['route_short_name', 'pattern', 'name'], aggfunc='sum').reset_index() # Added km_per_year
-    table.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', pattern = 'Variante', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr'), inplace=True)
+    table = try_this.pivot_table(['km_in_poly','km_per_year','h_per_year'], index=['route_short_name', 'pattern', 'name'], aggfunc='sum').reset_index() # Added km_per_year and h_per_year
+    table.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', pattern = 'Variante', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr', h_per_year = 'Stunden im Jahr'), inplace=True)
     
     # Assign color to patterns
     color_lookup = pdk.data_utils.assign_random_colors(try_this['pattern'])
