@@ -116,7 +116,7 @@ if uploaded_files != []:
 
     # Get polygon by stop
     stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
-    stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','NAME']], how='left')
+    stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
 
     # Get minutes per shape - needed to calculate driven hours in polygon
     stop_times['arrival_m'] = (stop_times['arrival_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['arrival_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['arrival_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
