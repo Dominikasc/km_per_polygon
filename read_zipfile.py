@@ -107,18 +107,18 @@ if uploaded_files != []:
 
     # Get minutes per shape - needed to calculate driven hours in polygon
     stop_times['arrival_m'] = (stop_times['arrival_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['arrival_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['arrival_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
-    min_per_shape = stop_times.groupby(['trip_id','shape_id','NAME','route_id','service_id','direction_id']).aggregate({'arrival_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x)}).reset_index()
+    min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'arrival_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x)}).reset_index()
     min_per_shape['arrival_m'] = min_per_shape.arrival_m.apply(lambda x: 0.5 if x == 0 else x)
 
     min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.arrival_m)/(1000/60)
-    min_per_shape1 = min_per_shape.groupby(['shape_id','NAME','route_id','service_id','direction_id']).aggregate({'trip_id':'count','arrival_m':'sum','poly_kmh':'mean'}).reset_index()
-    min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','NAME']).aggregate({'service_id':lambda x: list(x),'trip_id':'sum','arrival_m':'sum','poly_kmh':'mean'}).reset_index()
+    min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id']).aggregate({'trip_id':'count','arrival_m':'sum','poly_kmh':'mean'}).reset_index()
+    min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','name']).aggregate({'service_id':lambda x: list(x),'trip_id':'sum','arrival_m':'sum','poly_kmh':'mean'}).reset_index()
 
     min_per_shape2 = min_per_shape2.rename(columns={"trip_id": "ntrips"})
 
     # Calculate fallback speed by polygon
-    min_per_shape3 = min_per_shape2.groupby(['NAME']).aggregate({'poly_kmh':'mean'}).reset_index()
-    dict_min_per_shape = min_per_shape3.set_index('NAME')['poly_kmh'].to_dict()
+    min_per_shape3 = min_per_shape2.groupby(['name']).aggregate({'poly_kmh':'mean'}).reset_index()
+    dict_min_per_shape = min_per_shape3.set_index('name')['poly_kmh'].to_dict()
 
     # I need the intersection and also to keep the shape_id and poly_id or index
     # Get the intersection betwee each shape and each polygon
@@ -270,7 +270,7 @@ if uploaded_files != []:
     min_per_shape2 = min_per_shape2.dropna(subset=['service_id'])
     assigned_patterns1.service_id = assigned_patterns1.service_id.apply(tuple)
     min_per_shape2.service_id = min_per_shape2.service_id.apply(tuple)
-    assigned_patterns1 = pd.merge(assigned_patterns1, min_per_shape2,on=['route_id','service_id', 'shape_id','NAME','direction_id'],how='left') # Added poly_kmh
+    assigned_patterns1 = pd.merge(assigned_patterns1, min_per_shape2,on=['route_id','service_id', 'shape_id','name','direction_id'],how='left') # Added poly_kmh
     assigned_patterns1["poly_kmh"] = assigned_patterns1.poly_kmh.fillna(assigned_patterns1.NAME.map(dict_min_per_shape)) #fillna with fallback kmh (average per polygon)
     assigned_patterns1['poly_m'] = (assigned_patterns1.km_in_poly / assigned_patterns1.poly_kmh)*60 # calculate minutes per polygon
 
