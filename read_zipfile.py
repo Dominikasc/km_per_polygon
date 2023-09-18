@@ -12,6 +12,7 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 import geopandas as gpd
+from geopandas import GeoDataFrame
 import math
 
 import shapely #NEW
