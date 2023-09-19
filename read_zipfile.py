@@ -258,7 +258,7 @@ if uploaded_files != []:
                 some_days_in_common = len([id for id in servicedays_longer if id in servicedays_shorter])>0
                 condition3 = nstops*0.95 <= shorter.iloc[j]['nstops'] <= nstops*1.05
 
-                if condition_start & condition_end & some_days_in_common & condition3: 
+                if condition_start & condition_end & some_days_in_common: # & condition3: 
                     shorter.loc[j, 'aux_pattern'] = ABC[i]
                 elif shorter.loc[j, 'aux_pattern'] == "":
                     shorter.loc[j, 'aux_pattern'] = ABC[-i] # to assign a pattern for all unmatched
