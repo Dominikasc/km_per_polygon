@@ -367,7 +367,7 @@ if uploaded_files != []:
         (table['Variante'].isin(filter_patterns))
         ]
     #table_poly = table_poly.pivot_table(['Fahrten pro Jahr','Kilometer im Gebiet','Kilometer im Jahr','Stunden im Jahr'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
-    table_poly = table_poly.pivot_table(['Fahrten pro Jahr','Kilometer im Gebiet','Kilometer im Jahr','Stunden im Jahr'], index=group_by, aggfunc={'Fahrten pro Jahr': "max", 'Kilometer im Gebiet': "sum",'Kilometer im Jahr':"sum",'Stunden im Jahr': "sum"}).reset_index() 
+    table_poly = table_poly.pivot_table(['Fahrten pro Jahr','Kilometer im Gebiet','Kilometer im Jahr','Stunden im Jahr'], index=group_by, aggfunc={'Fahrten pro Jahr': ["max","sum"], 'Kilometer im Gebiet': "sum",'Kilometer im Jahr':"sum",'Stunden im Jahr': "sum"}).reset_index() 
     table_poly['Fahrten pro Jahr'] = table_poly['Fahrten pro Jahr'].apply(lambda x: str(round(x, 2)))     
     table_poly['Kilometer im Gebiet'] = table_poly['Kilometer im Gebiet'].apply(lambda x: str(round(x, 2)))     
     table_poly['Kilometer im Jahr'] = table_poly['Kilometer im Jahr'].apply(lambda x: str(round(x, 2)))     
