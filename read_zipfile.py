@@ -119,13 +119,13 @@ if uploaded_files != []:
     stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
 
     # Get minutes per shape - needed to calculate driven hours in polygon
-    stop_times['arrival_m'] = (stop_times['arrival_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['arrival_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['arrival_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
-    min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'arrival_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x)}).reset_index()
-    min_per_shape['arrival_m'] = min_per_shape.arrival_m.apply(lambda x: 0.5 if x == 0 else x)
+    stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
+    min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x)}).reset_index()
+    min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x)
 
-    min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.arrival_m)/(1000/60)
-    min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id']).aggregate({'trip_id':'count','arrival_m':'sum','poly_kmh':'mean'}).reset_index()
-    min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','name']).aggregate({'service_id':lambda x: list(x),'trip_id':'sum','arrival_m':'sum','poly_kmh':'mean'}).reset_index()
+    min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.departure_m)/(1000/60)
+    min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id']).aggregate({'trip_id':'count','departure_m':'sum','poly_kmh':'mean'}).reset_index()
+    min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','name']).aggregate({'service_id':lambda x: list(x),'trip_id':'sum','departure_m':'sum','poly_kmh':'mean'}).reset_index()
 
     min_per_shape2 = min_per_shape2.rename(columns={"trip_id": "ntrips"})
 
@@ -160,13 +160,14 @@ if uploaded_files != []:
 
     # Add the number of days per year 
 
-    calendar.loc[calendar['monday']>0, 'days_per_year'] = monday
-    calendar.loc[calendar['tuesday']>0, 'days_per_year'] = tuesday
-    calendar.loc[calendar['wednesday']>0, 'days_per_year'] = wednesday
-    calendar.loc[calendar['thursday']>0, 'days_per_year'] = thursday
-    calendar.loc[calendar['friday']>0, 'days_per_year'] = friday
-    calendar.loc[calendar['saturday']>0, 'days_per_year'] = saturday
-    calendar.loc[calendar['sunday']>0, 'days_per_year'] = sunday
+    calendar['days_per_year'] = 0
+    calendar.loc[calendar['monday']>0, 'days_per_year'] = calendar.loc[calendar['monday']>0, 'days_per_year'] + monday
+    calendar.loc[calendar['tuesday']>0, 'days_per_year'] = calendar.loc[calendar['tuesday']>0, 'days_per_year'] + tuesday
+    calendar.loc[calendar['wednesday']>0, 'days_per_year'] = calendar.loc[calendar['wednesday']>0, 'days_per_year'] + wednesday
+    calendar.loc[calendar['thursday']>0, 'days_per_year'] = calendar.loc[calendar['thursday']>0, 'days_per_year'] + thursday
+    calendar.loc[calendar['friday']>0, 'days_per_year'] = calendar.loc[calendar['friday']>0, 'days_per_year']  + friday
+    calendar.loc[calendar['saturday']>0, 'days_per_year'] = calendar.loc[calendar['saturday']>0, 'days_per_year'] + saturday
+    calendar.loc[calendar['sunday']>0, 'days_per_year'] = calendar.loc[calendar['sunday']>0, 'days_per_year'] + sunday
 
     # Get the patters with the same criteria as Remix
     # Pattern A is the one with more trips
