@@ -78,7 +78,7 @@ if uploaded_files != []:
             shapes = gpd.GeoDataFrame(data=aux.shape_id.unique(), geometry = lines, columns = ['shape_id'])
         elif name == 'features.geojson':     # Get the polygons, need to be uploaded as Geojson, not sure if this works
             polys = gpd.read_file(file)
-            polys = polys.to_crs(epsg=3587)
+            polys = polys.to_crs(epsg=4326)
 
     # Define number of days
 
@@ -112,7 +112,7 @@ if uploaded_files != []:
     # Create GDF from points
     geometry = [Point(xy) for xy in zip(stops.stop_lon, stops.stop_lat)]
     stops = stops.drop(['stop_lon', 'stop_lat'], axis=1)
-    stops_gdf = GeoDataFrame(stops, crs="EPSG:3587", geometry=geometry)
+    stops_gdf = GeoDataFrame(stops, crs="EPSG:4326", geometry=geometry)
 
     # Get polygon by stop
     stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
@@ -121,7 +121,7 @@ if uploaded_files != []:
     # Get minutes per shape - needed to calculate driven hours in polygon
     stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
     min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x)}).reset_index()
-    min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x)
+    #min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x) # removed because it reduces the avg km/h
 
     min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.departure_m)/(1000/60)
     min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id']).aggregate({'trip_id':'count','departure_m':'sum','poly_kmh':'mean'}).reset_index()
@@ -137,7 +137,7 @@ if uploaded_files != []:
     # Get the intersection betwee each shape and each polygon
     intersection_geo = [s.intersection(p) for s in shapes.geometry for p in polys.geometry]
     intersection = gpd.GeoDataFrame(geometry=intersection_geo)
-    intersection.crs = {'init':'epsg:3587'}
+    intersection.crs = {'init':'epsg:4326'}
     
     # Get the shape_ids repeated as many times as polygons there are
     shape_ids = [[s]*len(polys) for s in shapes.shape_id]
@@ -176,7 +176,7 @@ if uploaded_files != []:
     # Number of trips per shape
     trips_per_shape0 = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id','service_id'], aggfunc='count').reset_index()
     trips_per_shape0.rename(columns = dict(trip_id = 'ntrips'), inplace=True)
-    shapes.crs = {'init':'epsg:3587'} # Changed from 4326
+    shapes.crs = {'init':'epsg:4326'} 
     shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326 # CRS.from_epsg() --> deprecation warning
 
     trips_per_shape = pd.merge(trips_per_shape0, calendar[['service_id','days_per_year']], how='left')
