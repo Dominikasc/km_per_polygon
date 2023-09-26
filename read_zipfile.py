@@ -78,7 +78,7 @@ if uploaded_files != []:
             shapes = gpd.GeoDataFrame(data=aux.shape_id.unique(), geometry = lines, columns = ['shape_id'])
         elif name == 'features.geojson':     # Get the polygons, need to be uploaded as Geojson, not sure if this works
             polys = gpd.read_file(file)
-            polys = polys.to_crs(epsg=4326)
+            polys = polys.to_crs(epsg=3587)
 
     # Define number of days
 
@@ -112,7 +112,7 @@ if uploaded_files != []:
     # Create GDF from points
     geometry = [Point(xy) for xy in zip(stops.stop_lon, stops.stop_lat)]
     stops = stops.drop(['stop_lon', 'stop_lat'], axis=1)
-    stops_gdf = GeoDataFrame(stops, crs="EPSG:4326", geometry=geometry)
+    stops_gdf = GeoDataFrame(stops, crs="EPSG:3587", geometry=geometry)
 
     # Get polygon by stop
     stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
@@ -137,7 +137,7 @@ if uploaded_files != []:
     # Get the intersection betwee each shape and each polygon
     intersection_geo = [s.intersection(p) for s in shapes.geometry for p in polys.geometry]
     intersection = gpd.GeoDataFrame(geometry=intersection_geo)
-    intersection.crs = {'init':'epsg:4326'}
+    intersection.crs = {'init':'epsg:3587'}
     
     # Get the shape_ids repeated as many times as polygons there are
     shape_ids = [[s]*len(polys) for s in shapes.shape_id]
@@ -176,7 +176,7 @@ if uploaded_files != []:
     # Number of trips per shape
     trips_per_shape0 = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id','service_id'], aggfunc='count').reset_index()
     trips_per_shape0.rename(columns = dict(trip_id = 'ntrips'), inplace=True)
-    shapes.crs = {'init':'epsg:4326'}
+    shapes.crs = {'init':'epsg:3587'} # Changed from 4326
     shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326 # CRS.from_epsg() --> deprecation warning
 
     trips_per_shape = pd.merge(trips_per_shape0, calendar[['service_id','days_per_year']], how='left')
