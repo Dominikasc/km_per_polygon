@@ -154,7 +154,7 @@ if uploaded_files != []:
     intersection = intersection.loc[~intersection.geometry.is_empty].reset_index()
     
     # Calculate the length of the intersection in km
-    intersection['km_in_poly'] = intersection.geometry.to_crs(3587).length/1000  # changed from 32632 to 3587
+    intersection['km_in_poly'] = intersection.geometry.to_crs(32632).length/1000  # changed from 32632 to 3587
     intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
     
 
