@@ -305,7 +305,7 @@ if uploaded_files != []:
     assigned_patterns1['km_per_year'] = assigned_patterns1.km_in_poly * assigned_patterns1.trips_per_year     # Add km per year
     assigned_patterns1['h_per_year'] = (assigned_patterns1.poly_m * assigned_patterns1.trips_per_year)/60     # Add hours per year
 
-    assigned_patterns2 = assigned_patterns1.groupby(['route_short_name', 'aux_pattern']).aggregate({'nstops':'max','ntrips_y':'max','trips_per_year':'sum','km_in_poly':'sum','km_per_year':'sum','pattern_dist':'max','h_per_year':'sum'}).reset_index().sort_values(by = ['route_short_name','ntrips_y'], ascending=False) # New
+    assigned_patterns2 = assigned_patterns1.groupby(['route_short_name', 'aux_pattern']).aggregate({'nstops':'max','ntrips_y':'sum','trips_per_year':'sum','km_in_poly':'sum','km_per_year':'sum','pattern_dist':'max','h_per_year':'sum'}).reset_index().sort_values(by = ['route_short_name','ntrips_y'], ascending=False) # New
     assigned_patterns2.reset_index(inplace=True)
     assigned_patterns2.drop('index', axis=1, inplace=True)
 
