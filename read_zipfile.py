@@ -190,9 +190,11 @@ if uploaded_files != []:
     shapes.crs = {'init':'epsg:4326'} 
     shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326 # CRS.from_epsg() --> deprecation warning
 
-    trips_per_shape = pd.merge(trips_per_shape0, calendar[['service_id','days_per_year']], how='left')
-    trips_per_shape['trips_per_year'] = trips_per_shape['ntrips']*trips_per_shape['days_per_year']
+    # Add service_days and days per year to trips_per_shape0 for ntrips calculation
+    trips_per_shape = pd.merge(trips_per_shape0, calendar[['service_id','days_per_year','service_days']], how='left')
 
+    trips_per_shape['trips_per_year'] = trips_per_shape['ntrips']*trips_per_shape['days_per_year']
+    trips_per_shape['ntrips'] = trips_per_shape['ntrips']*trips_per_shape['service_days']
    
     trips_per_shape = trips_per_shape.groupby(['route_id','shape_id','direction_id']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','trips_per_year':'sum'}).reset_index() # added service_id
     trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id']], how='left') # added start/end coordinates
@@ -204,7 +206,6 @@ if uploaded_files != []:
     aux1 = aux1.drop_duplicates(subset=['shape_id', 'stop_sequence']).drop('trip_id', axis=1).sort_values(by=['route_id', 'shape_id', 'stop_sequence'], ascending=True).reset_index() # Removed route_id from subset to get accurate nb of stops
 
     # Get stops per shape
-
     stops_per_shape = aux1.groupby('shape_id').aggregate({'stop_sequence':'count','shape_dist_traveled':'max'}).reset_index()
     stops_per_shape.rename(columns = dict(stop_sequence = 'nstops', shape_dist_traveled = 'pattern_dist' ), inplace=True)
     stops_per_shape.pattern_dist = stops_per_shape.pattern_dist/1000
