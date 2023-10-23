@@ -139,16 +139,16 @@ if uploaded_files != []:
     stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
 
     # Add service_days to stop_times for ntrips calculation
-    stop_times = pd.merge(stop_times, calendar[['service_id','service_days']], how='left')
+    stop_times = pd.merge(stop_times, calendar[['service_id','days_per_year']], how='left')
 
     # Get minutes per shape - needed to calculate driven hours in polygon
     stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
-    min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x),'service_days':'max'}).reset_index()
+    min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x),'days_per_year':'max'}).reset_index()
     #min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x) # removed because it reduces the avg km/h
 
     min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.departure_m)/(1000/60)
-    min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id']).aggregate({'trip_id':'count','service_days':'max','departure_m':'sum','poly_kmh':'mean'}).reset_index()
-    min_per_shape1['ntrips'] = min_per_shape1.trip_id * min_per_shape1.service_days
+    min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id']).aggregate({'trip_id':'count','days_per_year':'max','departure_m':'sum','poly_kmh':'mean'}).reset_index()
+    min_per_shape1['ntrips'] = min_per_shape1.trip_id * min_per_shape1.days_per_year
 
     min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','name']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','departure_m':'sum','poly_kmh':'mean'}).reset_index()
 
