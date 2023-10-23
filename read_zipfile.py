@@ -14,6 +14,7 @@ import pydeck as pdk
 import geopandas as gpd
 from geopandas import GeoDataFrame #NEW
 import math
+import numpy as np
 
 import shapely #NEW
 from shapely.geometry import LineString
@@ -309,7 +310,7 @@ if uploaded_files != []:
     replace_length.rename(columns = dict(ntrips = 'split'), inplace=True)
     assigned_patterns1 = pd.merge(assigned_patterns1, replace_length, how='left',on=['route_short_name', 'aux_pattern','shape_id']) # Added split count
 
-    assigned_patterns1['km_in_poly'] = numpy.where(assigned_patterns1['split'] < 2, assigned_patterns1['km_in_shape'],assigned_patterns1['km_in_poly'])
+    assigned_patterns1['km_in_poly'] = np.where(assigned_patterns1['split'] < 2, assigned_patterns1['km_in_shape'],assigned_patterns1['km_in_poly'])
 
     min_per_shape2 = min_per_shape2.dropna(subset=['service_id'])
     assigned_patterns1.service_id = assigned_patterns1.service_id.apply(tuple)
