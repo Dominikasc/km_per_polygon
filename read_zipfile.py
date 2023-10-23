@@ -156,26 +156,14 @@ if uploaded_files != []:
     min_per_shape3 = min_per_shape2.groupby(['name']).aggregate({'poly_kmh':'mean'}).reset_index()
     dict_min_per_shape = min_per_shape3.set_index('name')['poly_kmh'].to_dict()
 
-    # I need the intersection and also to keep the shape_id and poly_id or index
-    # Get the intersection betwee each shape and each polygon
-    intersection_geo = [s.intersection(p) for s in shapes.geometry for p in polys.geometry]
-    intersection = gpd.GeoDataFrame(geometry=intersection_geo)
+    # I need the original length per shape
+    shapes.crs = {'init':'epsg:4326'}
+    shapes['km_in_shape'] = shapes.geometry.to_crs(32632).length/1000
+
+    # Calculate intersection between shapes and polygons
+    intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
     intersection.crs = {'init':'epsg:4326'}
-    
-    # Get the shape_ids repeated as many times as polygons there are
-    shape_ids = [[s]*len(polys) for s in shapes.shape_id]
-    
-    # Get the polygon list as many times as shapes there are
-    poly_index = [list(polys.index) for s in shapes.shape_id]
-    
-    # Add shape_id and polygon index to my intersection gdf
-    intersection['shape_id'] = list(itertools.chain.from_iterable(shape_ids))
-    # intersection['shape_id']  = intersection['shape_id']  + 'a' #this is only for keplergl to show it right
-    intersection['poly_index'] = list(itertools.chain.from_iterable(poly_index))
-    
-    # Keep only the ones that intersected
-    intersection = intersection.loc[~intersection.geometry.is_empty].reset_index()
-    
+
     # Calculate the length of the intersection in km
     intersection['km_in_poly'] = intersection.geometry.to_crs(localcrs).length/1000  # changed from 32632 to 3587
     intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
@@ -294,6 +282,14 @@ if uploaded_files != []:
     # Merge all variables (trips per year and km per year)
     assigned_patterns1 = pd.merge(assigned_patterns[['route_short_name','route_id','service_id', 'shape_id','aux_pattern', 'ntrips','trips_per_year','nstops','pattern_dist','direction_id']], intersection1, how='right') # Added trips per year
     assigned_patterns1 = assigned_patterns1.dropna(subset=['service_id'])
+
+    # Check if shape was split - if not, use km_in_shape instead of km_in_poly
+
+    replace_length = assigned_patterns1.groupby(['route_short_name', 'aux_pattern','shape_id'])['ntrips'].count().reset_index()
+    replace_length.rename(columns = dict(ntrips = 'split'), inplace=True)
+    assigned_patterns1 = pd.merge(assigned_patterns1, replace_length, how='left',on=['route_short_name', 'aux_pattern','shape_id']) # Added split count
+
+    assigned_patterns1['km_in_poly'] = np.where(assigned_patterns1['split'] < 2, assigned_patterns1['km_in_shape'],assigned_patterns1['km_in_poly'])
 
     min_per_shape2 = min_per_shape2.dropna(subset=['service_id'])
     assigned_patterns1.service_id = assigned_patterns1.service_id.apply(tuple)
