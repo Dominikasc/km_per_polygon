@@ -161,8 +161,28 @@ if uploaded_files != []:
     shapes['km_in_shape'] = shapes.geometry.to_crs(32632).length/1000
 
     # Calculate intersection between shapes and polygons
-    intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
+    #intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
+    #intersection.crs = {'init':'epsg:4326'}
+
+    # I need the intersection and also to keep the shape_id and poly_id or index
+    # Get the intersection between each shape and each polygon
+
+    intersection_geo = [s.intersection(p) for s in shapes.geometry for p in polys.geometry]
+    intersection = gpd.GeoDataFrame(geometry=intersection_geo)
     intersection.crs = {'init':'epsg:4326'}
+
+    # Get the shape_ids repeated as many times as polygons there are
+    shape_ids = [[s]*len(polys) for s in shapes.shape_id]
+        
+    # Get the polygon list as many times as shapes there are
+    poly_index = [list(polys.index) for s in shapes.shape_id]
+        
+    # Add shape_id and polygon index to my intersection gdf
+    intersection['shape_id'] = list(itertools.chain.from_iterable(shape_ids))
+    intersection['poly_index'] = list(itertools.chain.from_iterable(poly_index))
+        
+    # Keep only the ones that intersected
+    intersection = intersection.loc[~intersection.geometry.is_empty].reset_index()
 
     # Calculate the length of the intersection in km
     intersection['km_in_poly'] = intersection.geometry.to_crs(localcrs).length/1000  # changed from 32632 to 3587
