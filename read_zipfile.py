@@ -18,6 +18,8 @@ import math
 import shapely #NEW
 from shapely.geometry import LineString
 from shapely.geometry import Point #NEW
+from shapely import ops #new
+
 import pyproj #NEW
 
 import itertools
@@ -27,6 +29,7 @@ import string #NEW
 import rtree #NEW
 from string import ascii_uppercase #NEW
 import datetime #NEW
+
 
 #from glob import iglob
 #import glob
@@ -90,6 +93,20 @@ if uploaded_files != []:
     saturday = st.sidebar.number_input('Samstage im Jahr', value=52)
     sunday = st.sidebar.number_input('Sonntage im Jahr', value=62)
 
+    # Add the number of days per year 
+
+    calendar['days_per_year'] = 0
+    calendar.loc[calendar['monday']>0, 'days_per_year'] = calendar.loc[calendar['monday']>0, 'days_per_year'] + monday
+    calendar.loc[calendar['tuesday']>0, 'days_per_year'] = calendar.loc[calendar['tuesday']>0, 'days_per_year'] + tuesday
+    calendar.loc[calendar['wednesday']>0, 'days_per_year'] = calendar.loc[calendar['wednesday']>0, 'days_per_year'] + wednesday
+    calendar.loc[calendar['thursday']>0, 'days_per_year'] = calendar.loc[calendar['thursday']>0, 'days_per_year'] + thursday
+    calendar.loc[calendar['friday']>0, 'days_per_year'] = calendar.loc[calendar['friday']>0, 'days_per_year']  + friday
+    calendar.loc[calendar['saturday']>0, 'days_per_year'] = calendar.loc[calendar['saturday']>0, 'days_per_year'] + saturday
+    calendar.loc[calendar['sunday']>0, 'days_per_year'] = calendar.loc[calendar['sunday']>0, 'days_per_year'] + sunday
+
+    calendar['service_days'] = calendar.iloc[:,3:10].sum(axis=1)
+
+
     # Define CRS used for calculation
     localcrs = st.sidebar.number_input('Koordinatenreferenzsystem für Längenberechnung (EPSG)', value=32632)
     
@@ -121,16 +138,19 @@ if uploaded_files != []:
     stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
     stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
 
+    # Add service_days to stop_times for ntrips calculation
+    stop_times = pd.merge(stop_times, calendar[['service_id','days_per_year']], how='left')
+
     # Get minutes per shape - needed to calculate driven hours in polygon
     stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
-    min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x)}).reset_index()
+    min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x),'days_per_year':'max'}).reset_index()
     #min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x) # removed because it reduces the avg km/h
 
     min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.departure_m)/(1000/60)
-    min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id']).aggregate({'trip_id':'count','departure_m':'sum','poly_kmh':'mean'}).reset_index()
-    min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','name']).aggregate({'service_id':lambda x: list(x),'trip_id':'sum','departure_m':'sum','poly_kmh':'mean'}).reset_index()
+    min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id']).aggregate({'trip_id':'count','days_per_year':'max','departure_m':'sum','poly_kmh':'mean'}).reset_index()
+    min_per_shape1['ntrips'] = min_per_shape1.trip_id * min_per_shape1.days_per_year
 
-    min_per_shape2 = min_per_shape2.rename(columns={"trip_id": "ntrips"})
+    min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','name']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','departure_m':'sum','poly_kmh':'mean'}).reset_index()
 
     # Calculate fallback speed by polygon
     min_per_shape3 = min_per_shape2.groupby(['name']).aggregate({'poly_kmh':'mean'}).reset_index()
@@ -160,18 +180,6 @@ if uploaded_files != []:
     intersection['km_in_poly'] = intersection.geometry.to_crs(localcrs).length/1000  # changed from 32632 to 3587
     intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
     
-
-    # Add the number of days per year 
-
-    calendar['days_per_year'] = 0
-    calendar.loc[calendar['monday']>0, 'days_per_year'] = calendar.loc[calendar['monday']>0, 'days_per_year'] + monday
-    calendar.loc[calendar['tuesday']>0, 'days_per_year'] = calendar.loc[calendar['tuesday']>0, 'days_per_year'] + tuesday
-    calendar.loc[calendar['wednesday']>0, 'days_per_year'] = calendar.loc[calendar['wednesday']>0, 'days_per_year'] + wednesday
-    calendar.loc[calendar['thursday']>0, 'days_per_year'] = calendar.loc[calendar['thursday']>0, 'days_per_year'] + thursday
-    calendar.loc[calendar['friday']>0, 'days_per_year'] = calendar.loc[calendar['friday']>0, 'days_per_year']  + friday
-    calendar.loc[calendar['saturday']>0, 'days_per_year'] = calendar.loc[calendar['saturday']>0, 'days_per_year'] + saturday
-    calendar.loc[calendar['sunday']>0, 'days_per_year'] = calendar.loc[calendar['sunday']>0, 'days_per_year'] + sunday
-
     # Get the patters with the same criteria as Remix
     # Pattern A is the one with more trips
     # If two patterns have the same number of trips, then the longer
@@ -182,13 +190,16 @@ if uploaded_files != []:
     shapes.crs = {'init':'epsg:4326'} 
     shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326 # CRS.from_epsg() --> deprecation warning
 
-    trips_per_shape = pd.merge(trips_per_shape0, calendar[['service_id','days_per_year']], how='left')
-    trips_per_shape['trips_per_year'] = trips_per_shape['ntrips']*trips_per_shape['days_per_year']
+    # Add service_days and days per year to trips_per_shape0 for ntrips calculation
+    trips_per_shape = pd.merge(trips_per_shape0, calendar[['service_id','days_per_year','service_days']], how='left')
 
+    trips_per_shape['trips_per_year'] = trips_per_shape['ntrips']*trips_per_shape['days_per_year']
+    trips_per_shape['ntrips'] = trips_per_shape['ntrips']*trips_per_shape['service_days']
    
     trips_per_shape = trips_per_shape.groupby(['route_id','shape_id','direction_id']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','trips_per_year':'sum'}).reset_index() # added service_id
-    trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id']], how='left') # added start/end coordinates
-
+    #trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id','startcoord','endcoord']], how='left') # added start/end coordinates
+    trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id']], how='left')
+    
     # Number of stops per shape
     aux = stop_times[['route_id', 'stop_id', 'stop_sequence', 'trip_id', 'shape_id','shape_dist_traveled']] # No need to merge with trips, data already merged in line 66
     aux1 = aux.groupby(['route_id', 'trip_id','shape_id'])['shape_dist_traveled'].max().reset_index() # add shapes_dist_travelled for accurate km in pattern sorting
@@ -196,7 +207,6 @@ if uploaded_files != []:
     aux1 = aux1.drop_duplicates(subset=['shape_id', 'stop_sequence']).drop('trip_id', axis=1).sort_values(by=['route_id', 'shape_id', 'stop_sequence'], ascending=True).reset_index() # Removed route_id from subset to get accurate nb of stops
 
     # Get stops per shape
-
     stops_per_shape = aux1.groupby('shape_id').aggregate({'stop_sequence':'count','shape_dist_traveled':'max'}).reset_index()
     stops_per_shape.rename(columns = dict(stop_sequence = 'nstops', shape_dist_traveled = 'pattern_dist' ), inplace=True)
     stops_per_shape.pattern_dist = stops_per_shape.pattern_dist/1000
@@ -278,7 +288,7 @@ if uploaded_files != []:
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
     
     # Get actual number of stops, trips, trips per year and pattern distance
-    assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern','direction_id']).aggregate({'nstops':'sum','pattern_dist':'sum','ntrips':'sum','trips_per_year':'sum',}).reset_index()
+    assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern','direction_id','shape_id']).aggregate({'nstops':'sum','pattern_dist':'sum','ntrips':'sum','trips_per_year':'max',}).reset_index()
     assigned_patterns = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops','pattern_dist','ntrips','trips_per_year'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
 
     # Merge all variables (trips per year and km per year)
@@ -296,7 +306,7 @@ if uploaded_files != []:
     assigned_patterns1['km_per_year'] = assigned_patterns1.km_in_poly * assigned_patterns1.trips_per_year     # Add km per year
     assigned_patterns1['h_per_year'] = (assigned_patterns1.poly_m * assigned_patterns1.trips_per_year)/60     # Add hours per year
 
-    assigned_patterns2 = assigned_patterns1.groupby(['route_short_name', 'aux_pattern']).aggregate({'nstops':'max','ntrips_x':'max','trips_per_year':'sum','km_in_poly':'sum','km_per_year':'sum','pattern_dist':'max','h_per_year':'sum'}).reset_index().sort_values(by = ['route_short_name','ntrips_x'], ascending=False) # New
+    assigned_patterns2 = assigned_patterns1.groupby(['route_short_name', 'aux_pattern']).aggregate({'nstops':'max','ntrips_y':'sum','trips_per_year':'sum','km_in_poly':'sum','km_per_year':'sum','pattern_dist':'max','h_per_year':'sum'}).reset_index().sort_values(by = ['route_short_name','ntrips_y'], ascending=False) # New
     assigned_patterns2.reset_index(inplace=True)
     assigned_patterns2.drop('index', axis=1, inplace=True)
 
