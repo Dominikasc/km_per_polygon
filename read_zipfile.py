@@ -142,16 +142,23 @@ if uploaded_files != []:
     # Add service_days to stop_times for ntrips calculation
     stop_times = pd.merge(stop_times, calendar[['service_id','days_per_year']], how='left')
 
+    # Add diff kmh per trip and stop
+    stop_times['diff_min'] = np.where(stop_times['stop_sequence'] > 1, stop_times['departure_m'] - stop_times['departure_m'].shift(1), 0)
+    stop_times['diff_dist'] = np.where(stop_times['stop_sequence'] > 1, stop_times['shape_dist_traveled'] - stop_times['shape_dist_traveled'].shift(1), 0)
+
+    stop_times['diff_kmh'] = (stop_times.diff_dist/stop_times.diff_min)/(1000/60)
+    stop_times = stop_times.replace([np.inf, -np.inf],np.nan)    
+
     # Get minutes per shape - needed to calculate driven hours in polygon
     stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
-    min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x),'days_per_year':'max'}).reset_index()
+    min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x),'days_per_year':'max','diff_kmh':'mean'}).reset_index()
     #min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x) # removed because it reduces the avg km/h
 
     min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.departure_m)/(1000/60)
-    min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id']).aggregate({'trip_id':'count','days_per_year':'max','departure_m':'sum','poly_kmh':'mean'}).reset_index()
+    min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id']).aggregate({'trip_id':'count','days_per_year':'max','departure_m':'sum','poly_kmh':'mean','diff_kmh':'mean'}).reset_index()
     min_per_shape1['ntrips'] = min_per_shape1.trip_id * min_per_shape1.days_per_year
 
-    min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','name']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','departure_m':'sum','poly_kmh':'mean'}).reset_index()
+    min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','name']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','departure_m':'sum','poly_kmh':'mean','diff_kmh':'mean'}).reset_index()
 
     # Calculate fallback speed by polygon
     min_per_shape3 = min_per_shape2.groupby(['name']).aggregate({'poly_kmh':'mean'}).reset_index()
@@ -321,6 +328,10 @@ if uploaded_files != []:
     assigned_patterns1 = pd.merge(assigned_patterns1, replace_length, how='left',on=['route_short_name', 'aux_pattern','shape_id']) # Added split count
 
     assigned_patterns1['km_in_poly'] = np.where(assigned_patterns1['split'] < 2, assigned_patterns1['km_in_shape'],assigned_patterns1['km_in_poly'])
+
+    #replace poly_kmh with diff_kmh if NaN
+    min_per_shape2 = min_per_shape2.dropna(subset=['service_id'])
+    min_per_shape2['poly_kmh'] = np.where(np.isnan(min_per_shape2['poly_kmh']), min_per_shape2['diff_kmh'] , min_per_shape2['poly_kmh'])
 
     min_per_shape2 = min_per_shape2.dropna(subset=['service_id'])
     assigned_patterns1.service_id = assigned_patterns1.service_id.apply(tuple)
