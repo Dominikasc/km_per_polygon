@@ -292,9 +292,11 @@ if uploaded_files != []:
         assigned_patterns.drop('index', inplace=True, axis=1)
 
 
-    # Intersection geometries I need
-    intersection1 = pd.merge(intersection, polys[['name']], left_on='poly_index', right_on=polys.index, how='left')
-    intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
+    # Intersection geometries I need #changed
+    #intersection1 = pd.merge(intersection, polys[['name']], left_on='poly_index', right_on=polys.index, how='left')
+    #intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
+    intersection1 = pd.merge(intersection, polys[['name']], how='left')
+    intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['geometry'], axis=1), geometry = intersection1.geometry)
     
     # Get actual number of stops, trips, trips per year and pattern distance
     assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern','direction_id','shape_id']).aggregate({'nstops':'sum','pattern_dist':'sum','ntrips':'sum','trips_per_year':'max',}).reset_index()
