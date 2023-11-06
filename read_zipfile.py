@@ -154,8 +154,8 @@ if uploaded_files != []:
     min_per_shape2 = min_per_shape1.groupby(['route_id','shape_id','direction_id','name']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','departure_m':'sum','poly_kmh':'mean'}).reset_index()
 
     # Calculate fallback speed by polygon
-    min_per_shape3 = min_per_shape2.groupby(['name']).aggregate({'poly_kmh':'mean'}).reset_index()
-    dict_min_per_shape = min_per_shape3.set_index('name')['poly_kmh'].to_dict()
+    min_per_shape3 = min_per_shape2.groupby(['route_id']).aggregate({'poly_kmh':'mean'}).reset_index()
+    dict_min_per_shape = min_per_shape3.set_index('route_id')['poly_kmh'].to_dict()
 
     # I need the original length per shape
     shapes.crs = {'init':'epsg:4326'}
@@ -326,7 +326,7 @@ if uploaded_files != []:
     assigned_patterns1.service_id = assigned_patterns1.service_id.apply(tuple)
     min_per_shape2.service_id = min_per_shape2.service_id.apply(tuple)
     assigned_patterns1 = pd.merge(assigned_patterns1, min_per_shape2,on=['route_id','service_id', 'shape_id','name','direction_id'],how='left') # Added poly_kmh
-    assigned_patterns1["poly_kmh"] = assigned_patterns1.poly_kmh.fillna(assigned_patterns1.name.map(dict_min_per_shape)) #fillna with fallback kmh (average per polygon)
+    assigned_patterns1["poly_kmh"] = assigned_patterns1.poly_kmh.fillna(assigned_patterns1.route_id.map(dict_min_per_shape)) #fillna with fallback kmh (average per polygon)
     assigned_patterns1['poly_m'] = (assigned_patterns1.km_in_poly / assigned_patterns1.poly_kmh)*60 # calculate minutes per polygon
 
     # Get km and hours per year 
