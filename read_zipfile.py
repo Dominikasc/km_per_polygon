@@ -161,34 +161,41 @@ if uploaded_files != []:
     shapes.crs = {'init':'epsg:4326'}
     shapes['km_in_shape'] = shapes.geometry.to_crs(32632).length/1000
 
-    # Calculate intersection between shapes and polygons
+    # Calculate intersection between shapes and polygons #changed
     #intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
     #intersection.crs = {'init':'epsg:4326'}
 
     # I need the intersection and also to keep the shape_id and poly_id or index
-    # Get the intersection between each shape and each polygon
+    # Get the intersection between each shape and each polygon #changed
 
-    intersection_geo = [s.intersection(p) for s in shapes.geometry for p in polys.geometry]
-    intersection = gpd.GeoDataFrame(geometry=intersection_geo)
-    intersection.crs = {'init':'epsg:4326'}
+    #intersection_geo = [s.intersection(p) for s in shapes.geometry for p in polys.geometry]
+    #intersection = gpd.GeoDataFrame(geometry=intersection_geo)
+    #intersection.crs = {'init':'epsg:4326'}
 
-    # Get the shape_ids repeated as many times as polygons there are
-    shape_ids = [[s]*len(polys) for s in shapes.shape_id]
+    # Get the shape_ids repeated as many times as polygons there are #changed
+    #shape_ids = [[s]*len(polys) for s in shapes.shape_id]
         
-    # Get the polygon list as many times as shapes there are
-    poly_index = [list(polys.index) for s in shapes.shape_id]
+    # Get the polygon list as many times as shapes there are #changed
+    #poly_index = [list(polys.index) for s in shapes.shape_id]
         
-    # Add shape_id and polygon index to my intersection gdf
-    intersection['shape_id'] = list(itertools.chain.from_iterable(shape_ids))
-    intersection['poly_index'] = list(itertools.chain.from_iterable(poly_index))
+    # Add shape_id and polygon index to my intersection gdf #changed
+    #intersection['shape_id'] = list(itertools.chain.from_iterable(shape_ids))
+    #intersection['poly_index'] = list(itertools.chain.from_iterable(poly_index))
         
-    # Keep only the ones that intersected
-    intersection = intersection.loc[~intersection.geometry.is_empty].reset_index()
+    # Keep only the ones that intersected #changed
+    #intersection = intersection.loc[~intersection.geometry.is_empty].reset_index()
 
-    # Calculate the length of the intersection in km
-    intersection['km_in_poly'] = intersection.geometry.to_crs(localcrs).length/1000  # changed from 32632 to 3587
-    intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
+    # Calculate the length of the intersection in km #changed
+    #intersection['km_in_poly'] = intersection.geometry.to_crs(localcrs).length/1000  # changed from 32632 to 3587
+    #intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
     
+    # new test to find intersections
+    intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
+    intersection.crs = {'init':'epsg:4326'}
+    intersection['km_in_poly'] = intersection.geometry.to_crs(32632).length/1000
+
+    intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
+
     # Get the patters with the same criteria as Remix
     # Pattern A is the one with more trips
     # If two patterns have the same number of trips, then the longer
@@ -295,9 +302,10 @@ if uploaded_files != []:
     # Intersection geometries I need #changed
     #intersection1 = pd.merge(intersection, polys[['name']], left_on='poly_index', right_on=polys.index, how='left')
     #intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
+    
     intersection1 = pd.merge(intersection, polys[['name']], how='left')
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['geometry'], axis=1), geometry = intersection1.geometry)
-    
+
     # Get actual number of stops, trips, trips per year and pattern distance
     assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern','direction_id','shape_id']).aggregate({'nstops':'sum','pattern_dist':'sum','ntrips':'sum','trips_per_year':'max',}).reset_index()
     assigned_patterns = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops','pattern_dist','ntrips','trips_per_year'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
