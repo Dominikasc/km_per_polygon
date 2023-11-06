@@ -138,6 +138,7 @@ if uploaded_files != []:
     # Get polygon by stop
     stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
     stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
+    stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
 
     # Add service_days to stop_times for ntrips calculation
     stop_times = pd.merge(stop_times, calendar[['service_id','days_per_year']], how='left')
@@ -150,7 +151,6 @@ if uploaded_files != []:
     stop_times = stop_times.replace([np.inf, -np.inf],np.nan)    
 
     # Get minutes per shape - needed to calculate driven hours in polygon
-    stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
     min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x),'days_per_year':'max','diff_kmh':'mean'}).reset_index()
     #min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x) # removed because it reduces the avg km/h
 
