@@ -4,5 +4,4 @@ It only works in the city of Leverkusen, Germany as of now.
 
 Deployed with [Streamlit](https://streamlit.io/). Map with [Pydeck](https://pydeck.gl/). 
 
-You can take a look to the app [here.](https://km-polygon.streamlit.app/) 
-
+You can take a look to the app [here.](https://kmperpolygon-remix.streamlit.app/) 
