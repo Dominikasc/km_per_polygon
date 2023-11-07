@@ -1,6 +1,5 @@
 # km_per_polygon
-Small app that allows you to upload the files "route.txt", "trips.txt" and "shapes.txt" from the GTFS and get the number of kilometers each route does on a given set of polygons.
-It only works in the city of Leverkusen, Germany as of now.
+Small app that allows you to upload a GTFS file with "shapes.txt" and a set of polygons and get the number of kilometers each route does per area.
 
 Deployed with [Streamlit](https://streamlit.io/). Map with [Pydeck](https://pydeck.gl/). 
 
