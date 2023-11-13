@@ -477,9 +477,6 @@ if uploaded_files != []:
             href = f'<a href="data:file/csv;base64,{b64}">CSV Datei exportieren</a>'
             return href
         
-        #gb = GridOptionsBuilder() #NEW
-        available_themes = ["streamlit", "light", "dark", "blue", "fresh", "material"]
-        selected_theme = st.selectbox("Theme", available_themes)
         gb = GridOptionsBuilder.from_dataframe(table_poly) #NEW
 
         gb.configure_default_column(
@@ -494,19 +491,6 @@ if uploaded_files != []:
             header_name="Linie", 
             pinned='left',
         ) #NEW
-        
-              
-        #gb.configure_column(
-        #    field="Gebiet",
-        #    header_name="Gebiet",
-        #    width=100,
-        #    tooltipField="Gebiet",
-        #) #NEW
-        #gb.configure_column(
-        #    field="Variante",
-        #    header_name="Variante",
-        #    width=100,
-        #) #NEW
 
         gb.configure_column(
             field="Fahrten pro Jahr",
@@ -546,7 +530,7 @@ if uploaded_files != []:
 
         go = gb.build() #NEW
 
-        AgGrid(table_poly, gridOptions=go, theme=selected_theme) #NEW
+        AgGrid(table_poly, gridOptions=go, theme="streamlit") #NEW
         #st.dataframe(table_poly, 1200, 600) #NEW
         st.markdown(get_table_download_link(table_poly), unsafe_allow_html=True)
 
