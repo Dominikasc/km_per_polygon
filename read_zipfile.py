@@ -491,34 +491,31 @@ if uploaded_files != []:
             field="Linie", 
             header_name="Linie", 
             pinned='left',
-            rowGroup=True if shouldDisplayPivoted else False,
         ) #NEW
         
         gb.configure_column(
             field="Gebiet",
             header_name="Gebiet",
-            flex=1,
+            width=100,
             tooltipField="Gebiet",
-            rowGroup=True if shouldDisplayPivoted else False,
         ) #NEW
         gb.configure_column(
             field="Variante",
             header_name="Variante",
-            width=110,
-            rowGroup=shouldDisplayPivoted,
+            width=100,
         ) #NEW
 
         gb.configure_column(
             field="Fahrten pro Jahr",
             header_name="Fahrten pro Jahr",
-            width=150,
+            width=100,
             tooltipField="Fahrten pro Jahr",
         ) #NEW
 
         gb.configure_column(
             field="Kilometer im Gebiet",
             header_name="Kilometer im Gebiet",
-            width=50,
+            width=100,
             type=["numericColumn"],
         ) #NEW
 
@@ -527,8 +524,6 @@ if uploaded_files != []:
             header_name="Kilometer im Jahr",
             width=100,
             type=["numericColumn"],
-            aggFunc="sum",
-            valueFormatter="value.toLocaleString()",
         ) #NEW
 
         gb.configure_column(
@@ -536,8 +531,6 @@ if uploaded_files != []:
             header_name="Stunden im Jahr",
             width=100,
             type=["numericColumn"],
-            aggFunc="sum",
-            valueFormatter="value.toLocaleString()",
         ) #NEW
 
         gb.configure_grid_options(
