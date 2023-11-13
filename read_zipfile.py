@@ -478,6 +478,8 @@ if uploaded_files != []:
             return href
         
         #gb = GridOptionsBuilder() #NEW
+        available_themes = ["streamlit", "light", "dark", "blue", "fresh", "material"]
+        selected_theme = st.selectbox("Theme", available_themes)
         gb = GridOptionsBuilder.from_dataframe(table_poly) #NEW
 
         gb.configure_default_column(
@@ -544,7 +546,7 @@ if uploaded_files != []:
 
         go = gb.build() #NEW
 
-        AgGrid(table_poly, gridOptions=go, theme='streamlit') #NEW
+        AgGrid(table_poly, gridOptions=go, theme=selected_theme) #NEW
         #st.dataframe(table_poly, 1200, 600) #NEW
         st.markdown(get_table_download_link(table_poly), unsafe_allow_html=True)
 
