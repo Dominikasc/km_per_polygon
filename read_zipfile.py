@@ -489,8 +489,7 @@ if uploaded_files != []:
             field="Linie", header_name="Linie", pinned='left') #NEW
         
         gb.configure_grid_options(
-            tooltipShowDelay=0,
-            pivotMode=shouldDisplayPivoted,
+            tooltipShowDelay=0
             )#NEW
         
         go = gb.build() #NEW
