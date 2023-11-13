@@ -507,32 +507,34 @@ if uploaded_files != []:
 
         gb.configure_column(
             field="Fahrten pro Jahr",
-            header_name="Fahrten pro Jahr",
+            header_name="Fahrten/Jahr",
             width=100,
             tooltipField="Fahrten pro Jahr",
         ) #NEW
 
         gb.configure_column(
             field="Kilometer im Gebiet",
-            header_name="Kilometer im Gebiet",
+            header_name="Km/Gebiet",
             width=100,
             type=["numericColumn"],
         ) #NEW
 
         gb.configure_column(
             field="Kilometer im Jahr",
-            header_name="Kilometer im Jahr",
+            header_name="Km/Jahr",
             width=100,
             type=["numericColumn"],
         ) #NEW
 
         gb.configure_column(
             field="Stunden im Jahr",
-            header_name="Stunden im Jahr",
+            header_name="Std./Jahr",
             width=100,
             type=["numericColumn"],
         ) #NEW
-
+        
+        gb.configure_side_bar() #NEW
+        
         gb.configure_grid_options(
             tooltipShowDelay=0
             )#NEW
