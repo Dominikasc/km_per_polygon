@@ -506,33 +506,36 @@ if uploaded_files != []:
         #    width=100,
         #) #NEW
 
-        #gb.configure_column(
-        #    field="Fahrten pro Jahr",
-        #    header_name="Fahrten/Jahr",
-        #    width=100,
-        #    tooltipField="Fahrten pro Jahr",
-        #) #NEW
+        gb.configure_column(
+            field="Fahrten pro Jahr",
+            header_name="Fahrten/Jahr",
+            width=100,
+            tooltipField="Fahrten pro Jahr",
+        ) #NEW
 
-        #gb.configure_column(
-        #    field="Kilometer im Gebiet",
-        #    header_name="Km/Gebiet",
-        #    width=100,
-        #    type=["numericColumn"],
-        #) #NEW
+        gb.configure_column(
+            field="Kilometer im Gebiet",
+            header_name="Km/Gebiet",
+            width=100,
+            tooltipField="Kilometer im Gebiet",
+            type=["numericColumn"],
+        ) #NEW
 
-        #gb.configure_column(
-        #    field="Kilometer im Jahr",
-        #    header_name="Km/Jahr",
-        #    width=100,
-        #    type=["numericColumn"],
-        #) #NEW
+        gb.configure_column(
+            field="Kilometer im Jahr",
+            header_name="Km/Jahr",
+            width=100,
+            tooltipField="Kilometer im Jahr",
+            type=["numericColumn"],
+        ) #NEW
 
-        #gb.configure_column(
-        #    field="Stunden im Jahr",
-        #    header_name="Std./Jahr",
-        #    width=100,
-        #    type=["numericColumn"],
-        #) #NEW
+        gb.configure_column(
+            field="Stunden im Jahr",
+            header_name="Std./Jahr",
+            width=100,
+            tooltipField="Stunden im Jahr",
+            type=["numericColumn"],
+        ) #NEW
         
         #gb.configure_side_bar() #NEW
         gb.configure_grid_options(
@@ -541,7 +544,7 @@ if uploaded_files != []:
 
         go = gb.build() #NEW
 
-        AgGrid(table_poly, gridOptions=go,fit_columns_on_grid_load=True, theme='streamlit') #NEW
+        AgGrid(table_poly, gridOptions=go,fit_columns_on_grid_load=True, theme='fresh') #NEW
         #st.dataframe(table_poly, 1200, 600) #NEW
         st.markdown(get_table_download_link(table_poly), unsafe_allow_html=True)
 
