@@ -544,7 +544,7 @@ if uploaded_files != []:
 
         go = gb.build() #NEW
 
-        AgGrid(table_poly, gridOptions=go,fit_columns_on_grid_load=True, theme='fresh') #NEW
+        AgGrid(table_poly, gridOptions=go, theme='streamlit') #NEW
         #st.dataframe(table_poly, 1200, 600) #NEW
         st.markdown(get_table_download_link(table_poly), unsafe_allow_html=True)
 
