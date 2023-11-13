@@ -477,8 +477,22 @@ if uploaded_files != []:
             return href
         
         gb = GridOptionsBuilder() #NEW
-        gb.configure_column( #NEW
+
+        gb.configure_default_column(
+            resizable=True,
+            filterable=True,
+            sortable=True,
+            editable=False,
+            )#NEW
+        
+        gb.configure_column( 
             field="Linie", header_name="Linie", pinned='left') #NEW
+        
+        gb.configure_grid_options(
+            tooltipShowDelay=0,
+            pivotMode=shouldDisplayPivoted,
+            )#NEW
+        
         go = gb.build() #NEW
 
         AgGrid(table_poly, gridOptions=go) #NEW
