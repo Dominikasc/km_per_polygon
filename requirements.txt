@@ -5,3 +5,4 @@ pydeck==0.6.1
 Shapely==1.8.4
 rtree==1.0.1
 numpy==1.25.0
+streamlit-aggrid==0.3.4
