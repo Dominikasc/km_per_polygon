@@ -466,7 +466,6 @@ if uploaded_files != []:
     with col2:
         st.subheader('Gesamtkilometer pro Gebiet = {}'.format(round(table_poly['Kilometer im Gebiet'].map(float).sum(),1)))
                     # Download data
-        shouldDisplayPivoted = st.checkbox("Pivot data") #NEW
 
         def get_table_download_link(df):
             """Generates a link allowing the data in a given panda dataframe to be downloaded
@@ -478,7 +477,8 @@ if uploaded_files != []:
             href = f'<a href="data:file/csv;base64,{b64}">CSV Datei exportieren</a>'
             return href
         
-        gb = GridOptionsBuilder() #NEW
+        #gb = GridOptionsBuilder() #NEW
+        gb = GridOptionsBuilder.from_dataframe(table_poly) #NEW
 
         gb.configure_default_column(
             resizable=True,
@@ -492,53 +492,53 @@ if uploaded_files != []:
             header_name="Linie", 
             pinned='left',
         ) #NEW
+      
+        #gb.configure_column(
+        #    field="Gebiet",
+        #    header_name="Gebiet",
+        #    width=100,
+        #    tooltipField="Gebiet",
+        #) #NEW
+        #gb.configure_column(
+        #    field="Variante",
+        #    header_name="Variante",
+        #    width=100,
+        #) #NEW
+
+        #gb.configure_column(
+        #    field="Fahrten pro Jahr",
+        #    header_name="Fahrten/Jahr",
+        #    width=100,
+        #    tooltipField="Fahrten pro Jahr",
+        #) #NEW
+
+        #gb.configure_column(
+        #    field="Kilometer im Gebiet",
+        #    header_name="Km/Gebiet",
+        #    width=100,
+        #    type=["numericColumn"],
+        #) #NEW
+
+        #gb.configure_column(
+        #    field="Kilometer im Jahr",
+        #    header_name="Km/Jahr",
+        #    width=100,
+        #    type=["numericColumn"],
+        #) #NEW
+
+        #gb.configure_column(
+        #    field="Stunden im Jahr",
+        #    header_name="Std./Jahr",
+        #    width=100,
+        #    type=["numericColumn"],
+        #) #NEW
         
-        gb.configure_column(
-            field="Gebiet",
-            header_name="Gebiet",
-            width=100,
-            tooltipField="Gebiet",
-        ) #NEW
-        gb.configure_column(
-            field="Variante",
-            header_name="Variante",
-            width=100,
-        ) #NEW
-
-        gb.configure_column(
-            field="Fahrten pro Jahr",
-            header_name="Fahrten/Jahr",
-            width=100,
-            tooltipField="Fahrten pro Jahr",
-        ) #NEW
-
-        gb.configure_column(
-            field="Kilometer im Gebiet",
-            header_name="Km/Gebiet",
-            width=100,
-            type=["numericColumn"],
-        ) #NEW
-
-        gb.configure_column(
-            field="Kilometer im Jahr",
-            header_name="Km/Jahr",
-            width=100,
-            type=["numericColumn"],
-        ) #NEW
-
-        gb.configure_column(
-            field="Stunden im Jahr",
-            header_name="Std./Jahr",
-            width=100,
-            type=["numericColumn"],
-        ) #NEW
-        
-        gb.configure_side_bar() #NEW
+        #gb.configure_side_bar() #NEW
         
         gb.configure_grid_options(
             tooltipShowDelay=0
             )#NEW
-        
+
         go = gb.build() #NEW
 
         AgGrid(table_poly, gridOptions=go) #NEW
