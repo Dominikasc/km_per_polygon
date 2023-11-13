@@ -12,24 +12,26 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 import geopandas as gpd
-from geopandas import GeoDataFrame #NEW
+from geopandas import GeoDataFrame 
 import math
 import numpy as np
 
-import shapely #NEW
+import shapely 
 from shapely.geometry import LineString
-from shapely.geometry import Point #NEW
-from shapely import ops #new
+from shapely.geometry import Point 
+from shapely import ops 
 
-import pyproj #NEW
+import pyproj 
 
 import itertools
 import base64
-import glob #NEW
-import string #NEW
-import rtree #NEW
-from string import ascii_uppercase #NEW
-import datetime #NEW
+import glob 
+import string 
+import rtree 
+from string import ascii_uppercase 
+import datetime 
+from st_aggrid import AgGrid, GridOptionsBuilder #NEW
+
 
 
 #from glob import iglob
@@ -379,7 +381,7 @@ if uploaded_files != []:
     # LAYING OUT THE TOP SECTION OF THE APP
     st.header("Buskilometer pro Gebiet (geografische Grenze)")
     # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
-    col1, col2, col3= st.columns((1, 2 ,3))
+    col1, col2, col3= st.columns((1, 3 ,2)) #NEW
         
     # Select filters
     poly_names_list = list(gdf_intersections['Gebiet'].unique())
@@ -464,6 +466,7 @@ if uploaded_files != []:
     with col2:
         st.subheader('Gesamtkilometer pro Gebiet = {}'.format(round(table_poly['Kilometer im Gebiet'].map(float).sum(),1)))
                     # Download data
+
         def get_table_download_link(df):
             """Generates a link allowing the data in a given panda dataframe to be downloaded
             in:  dataframe
@@ -474,9 +477,63 @@ if uploaded_files != []:
             href = f'<a href="data:file/csv;base64,{b64}">CSV Datei exportieren</a>'
             return href
         
-        st.dataframe(table_poly, 1200, 600)
+        gb = GridOptionsBuilder.from_dataframe(table_poly) #NEW
+
+        gb.configure_default_column(
+            resizable=True,
+            filterable=True,
+            sortable=True,
+            editable=False,
+            )#NEW
+        
+        gb.configure_column( 
+            field="Linie", 
+            header_name="Linie", 
+            pinned='left',
+        ) #NEW
+
+        gb.configure_column(
+            field="Fahrten pro Jahr",
+            header_name="Fahrten/Jahr",
+            width=100,
+            tooltipField="Fahrten pro Jahr",
+        ) #NEW
+
+        gb.configure_column(
+            field="Kilometer im Gebiet",
+            header_name="Km/Gebiet",
+            width=100,
+            tooltipField="Kilometer im Gebiet",
+            type=["numericColumn"],
+        ) #NEW
+
+        gb.configure_column(
+            field="Kilometer im Jahr",
+            header_name="Km/Jahr",
+            width=100,
+            tooltipField="Kilometer im Jahr",
+            type=["numericColumn"],
+        ) #NEW
+
+        gb.configure_column(
+            field="Stunden im Jahr",
+            header_name="Std./Jahr",
+            width=100,
+            tooltipField="Stunden im Jahr",
+            type=["numericColumn"],
+        ) #NEW
+        
+        #gb.configure_side_bar() #NEW
+        gb.configure_grid_options(
+            tooltipShowDelay=0
+            )#NEW
+
+        go = gb.build() #NEW
+
+        AgGrid(table_poly, gridOptions=go, theme="streamlit") #NEW
+        #st.dataframe(table_poly, 1200, 600) #NEW
         st.markdown(get_table_download_link(table_poly), unsafe_allow_html=True)
-      
+
     with col3: 
         # CREATE THE MAP
         st.subheader('Map')
