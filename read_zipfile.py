@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Apr 20 09:13:18 2021
-Modified on Mon Sep 18 2023
+Modified on Mon Jan 29 2023
 
 @author: santi
 @coauthor: dominika
@@ -30,6 +30,7 @@ import string
 import rtree 
 from string import ascii_uppercase 
 import datetime 
+import utm
 from st_aggrid import AgGrid, GridOptionsBuilder #NEW
 
 
@@ -110,8 +111,23 @@ if uploaded_files != []:
     calendar['service_days'] = calendar.iloc[:,3:10].sum(axis=1)
 
 
-    # Define CRS used for calculation
-    localcrs = st.sidebar.number_input('Koordinatenreferenzsystem für Längenberechnung (EPSG)', value=32632)
+    # Define CRS used for calculation based on shapefile
+    def code(gdf):
+        gdf.index=list(range(0,len(gdf)))
+        gdf.crs = {'init':'epsg:4326'}
+        lat_referece = gdf.geometry[0].coords[0][1]
+        lon_reference = gdf.geometry[0].coords[0][0]
+
+        zone = utm.from_latlon(lat_referece, lon_reference)
+        #The EPSG code is 32600+zone for positive latitudes and 32700+zone for negatives.
+        if lat_referece <0:
+            epsg_code = 32700 + zone[2]
+        else:
+            epsg_code = 32600 + zone[2]
+        
+        return epsg_code
+    
+    localcrs = code(aux)
     
     # I need the route_id in stop_times
     stop_times = pd.merge(stop_times, trips, how='left')
@@ -309,9 +325,8 @@ if uploaded_files != []:
 
 
     # Intersection geometries I need #changed
-    #intersection1 = pd.merge(intersection, polys[['name']], left_on='poly_index', right_on=polys.index, how='left')
-    #intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['index','poly_index','geometry'], axis=1), geometry = intersection1.geometry)
-    
+        
+
     intersection1 = pd.merge(intersection, polys[['name']], how='left')
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['geometry'], axis=1), geometry = intersection1.geometry)
 
