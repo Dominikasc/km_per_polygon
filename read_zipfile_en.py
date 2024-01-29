@@ -394,7 +394,7 @@ if uploaded_files != []:
     # --------------------------- APP -----------------------------------------------
     # -------------------------------------------------------------------------------
     # LAYING OUT THE TOP SECTION OF THE APP
-    st.header("Buskilometer pro Gebiet (geografische Grenze)")
+    st.header("Bus kilometer per Area (geografic boundary)")
     # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
     col1, col2, col3= st.columns((1, 3 ,2)) #NEW
         
@@ -412,11 +412,11 @@ if uploaded_files != []:
     
     with col1:
         st.subheader('Filter')
-        filter_polys = st.multiselect('Gebiet', poly_names_list)
-        filter_routes = st.multiselect('Linie', lines_names_list)
-        filter_patterns = st.multiselect('Variante', patterns_names_list)
+        filter_polys = st.multiselect('Area', poly_names_list)
+        filter_routes = st.multiselect('Line', lines_names_list)
+        filter_patterns = st.multiselect('Pattern', patterns_names_list)
         st.subheader('Pivot Dimensionen')
-        group_by = st.multiselect('Gruppieren', ['Gebiet', 'Linie', 'Variante'], default = ['Gebiet', 'Linie', 'Variante'])
+        group_by = st.multiselect('Group by', ['Gebiet', 'Linie', 'Variante'], default = ['Gebiet', 'Linie', 'Variante'])
         
     if filter_polys == []:
         filter_polys = poly_names_list
