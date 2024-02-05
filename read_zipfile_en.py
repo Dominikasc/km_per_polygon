@@ -379,7 +379,7 @@ if uploaded_files != []:
     # I have the fields to filter by route and county
     try_this = pd.merge(df1, df2, how='left')
     table = try_this.pivot_table(['trips_per_year','km_in_poly','km_per_year','h_per_year'], index=['route_short_name', 'pattern', 'name'], aggfunc='sum').reset_index() # Added km_per_year and h_per_year
-    table.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', pattern = 'Variante',trips_per_year='Fahrten pro Jahr', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr', h_per_year = 'Stunden im Jahr'), inplace=True)
+    table.rename(columns = dict(route_short_name = 'Line', name = 'Area', pattern = 'Pattern',trips_per_year='Fahrten pro Jahr', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr', h_per_year = 'Stunden im Jahr'), inplace=True)
     
     # Assign color to patterns
     color_lookup = pdk.data_utils.assign_random_colors(try_this['pattern'])
@@ -388,7 +388,7 @@ if uploaded_files != []:
     # This is what I need to draw the map
     # I have the fields to filter by route and county
     gdf_intersections = gpd.GeoDataFrame(data = try_this[['route_short_name', 'name', 'pattern','color']], geometry = try_this.geometry)
-    gdf_intersections.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', pattern = 'Variante', color = 'Color'), inplace=True)
+    gdf_intersections.rename(columns = dict(route_short_name = 'Line', name = 'Area', pattern = 'Pattern', color = 'Color'), inplace=True)
     
     # -------------------------------------------------------------------------------
     # --------------------------- APP -----------------------------------------------
@@ -399,10 +399,10 @@ if uploaded_files != []:
     col1, col2, col3= st.columns((1, 3 ,2)) #NEW
         
     # Select filters
-    poly_names_list = list(gdf_intersections['Gebiet'].unique())
-    lines_names_list = list(gdf_intersections['Linie'].unique())
+    poly_names_list = list(gdf_intersections['Area'].unique())
+    lines_names_list = list(gdf_intersections['Line'].unique())
     lines_names_list = [str(x) for x in lines_names_list]
-    patterns_names_list = list(gdf_intersections['Variante'].unique())
+    patterns_names_list = list(gdf_intersections['Pattern'].unique())
     patterns_names_list = [str(x) for x in patterns_names_list]
 
 
@@ -416,7 +416,7 @@ if uploaded_files != []:
         filter_routes = st.multiselect('Line', lines_names_list)
         filter_patterns = st.multiselect('Pattern', patterns_names_list)
         st.subheader('Pivot Dimensionen')
-        group_by = st.multiselect('Group by', ['Gebiet', 'Linie', 'Variante'], default = ['Gebiet', 'Linie', 'Variante'])
+        group_by = st.multiselect('Group by', ['Area', 'Line', 'Pattern'], default = ['Area', 'Line', 'Pattern'])
         
     if filter_polys == []:
         filter_polys = poly_names_list
@@ -431,9 +431,9 @@ if uploaded_files != []:
     # Aggregate data as indicated in Pivot dimensions    
     # Filter data
     table_poly = table.loc[
-        (table['Linie'].isin(filter_routes))&
-        (table['Gebiet'].isin(filter_polys))&
-        (table['Variante'].isin(filter_patterns))
+        (table['Line'].isin(filter_routes))&
+        (table['Area'].isin(filter_polys))&
+        (table['Pattern'].isin(filter_patterns))
         ]
     #table_poly = table_poly.pivot_table(['Fahrten pro Jahr','Kilometer im Gebiet','Kilometer im Jahr','Stunden im Jahr'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
     table_poly = table_poly.pivot_table(['Fahrten pro Jahr','Kilometer im Gebiet','Kilometer im Jahr','Stunden im Jahr'], index=group_by, aggfunc={'Fahrten pro Jahr': "sum", 'Kilometer im Gebiet': "sum",'Kilometer im Jahr':"sum",'Stunden im Jahr': "sum"}).reset_index() 
@@ -461,9 +461,9 @@ if uploaded_files != []:
         
     # Filter line intersections that passed the filters
     line_intersections = gdf_intersections.loc[
-        (gdf_intersections['Linie'].isin(filter_routes))&
-        (gdf_intersections['Gebiet'].isin(filter_polys))&
-        (gdf_intersections['Variante'].isin(filter_patterns))
+        (gdf_intersections['Line'].isin(filter_routes))&
+        (gdf_intersections['Area'].isin(filter_polys))&
+        (gdf_intersections['Pattern'].isin(filter_patterns))
         ].__geo_interface__
     
     # Filter the shapes that passed the routes filters
@@ -502,7 +502,7 @@ if uploaded_files != []:
             )#NEW
         
         gb.configure_column( 
-            field="Linie", 
+            field="Line", 
             header_name="Line", 
             pinned='left',
         ) #NEW
