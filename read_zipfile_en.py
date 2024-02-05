@@ -21,7 +21,7 @@ from shapely.geometry import LineString
 from shapely.geometry import Point 
 from shapely import ops 
 
-import pyproj 
+import pyproj
 
 import itertools
 import base64
@@ -184,7 +184,7 @@ if uploaded_files != []:
 
     # I need the original length per shape
     shapes.crs = {'init':'epsg:4326'}
-    shapes['km_in_shape'] = shapes.geometry.to_crs(32632).length/1000
+    shapes['km_in_shape'] = shapes.geometry.to_crs(localcrs).length/1000
 
     # Calculate intersection between shapes and polygons #changed
     #intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
@@ -217,7 +217,7 @@ if uploaded_files != []:
     # new test to find intersections
     intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
     intersection.crs = {'init':'epsg:4326'}
-    intersection['km_in_poly'] = intersection.geometry.to_crs(32632).length/1000
+    intersection['km_in_poly'] = intersection.geometry.to_crs(localcrs).length/1000
 
     intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
 
