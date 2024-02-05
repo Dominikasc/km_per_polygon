@@ -244,103 +244,100 @@ if uploaded_files != []:
     #trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id','startcoord','endcoord']], how='left') # added start/end coordinates
     trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id']], how='left')
     
-    '''
     # Old pattern logic
     # Number of stops per shape
-    aux = stop_times[['route_id', 'stop_id', 'stop_sequence', 'trip_id', 'shape_id','shape_dist_traveled']] # No need to merge with trips, data already merged in line 66
-    aux1 = aux.groupby(['route_id', 'trip_id','shape_id'])['shape_dist_traveled'].max().reset_index() # add shapes_dist_travelled for accurate km in pattern sorting
-    aux1 = pd.merge(aux[['route_id', 'stop_id', 'stop_sequence', 'trip_id', 'shape_id']], aux1[['route_id', 'trip_id','shape_id','shape_dist_traveled']], left_on=['route_id','trip_id','shape_id'],right_on=['route_id','trip_id','shape_id'], how='left')
-    aux1 = aux1.drop_duplicates(subset=['shape_id', 'stop_sequence']).drop('trip_id', axis=1).sort_values(by=['route_id', 'shape_id', 'stop_sequence'], ascending=True).reset_index() # Removed route_id from subset to get accurate nb of stops
+    # aux = stop_times[['route_id', 'stop_id', 'stop_sequence', 'trip_id', 'shape_id','shape_dist_traveled']] # No need to merge with trips, data already merged in line 66
+    # aux1 = aux.groupby(['route_id', 'trip_id','shape_id'])['shape_dist_traveled'].max().reset_index() # add shapes_dist_travelled for accurate km in pattern sorting
+    # aux1 = pd.merge(aux[['route_id', 'stop_id', 'stop_sequence', 'trip_id', 'shape_id']], aux1[['route_id', 'trip_id','shape_id','shape_dist_traveled']], left_on=['route_id','trip_id','shape_id'],right_on=['route_id','trip_id','shape_id'], how='left')
+    # aux1 = aux1.drop_duplicates(subset=['shape_id', 'stop_sequence']).drop('trip_id', axis=1).sort_values(by=['route_id', 'shape_id', 'stop_sequence'], ascending=True).reset_index() # Removed route_id from subset to get accurate nb of stops
 
-    # Get stops per shape
-    stops_per_shape = aux1.groupby('shape_id').aggregate({'stop_sequence':'count','shape_dist_traveled':'max'}).reset_index()
-    stops_per_shape.rename(columns = dict(stop_sequence = 'nstops', shape_dist_traveled = 'pattern_dist' ), inplace=True)
-    stops_per_shape.pattern_dist = stops_per_shape.pattern_dist/1000
-    '''
+    # # Get stops per shape
+    # stops_per_shape = aux1.groupby('shape_id').aggregate({'stop_sequence':'count','shape_dist_traveled':'max'}).reset_index()
+    # stops_per_shape.rename(columns = dict(stop_sequence = 'nstops', shape_dist_traveled = 'pattern_dist' ), inplace=True)
+    # stops_per_shape.pattern_dist = stops_per_shape.pattern_dist/1000
     
     # Get all the variables I need to assign patterns in the same df
     patterns = pd.merge(trips_per_shape, shapes.drop('geometry', axis=1), how='left').sort_values(by=['route_id', 'ntrips', 'length_m'], ascending=False)
     patterns = pd.merge(patterns, stops_per_shape, how='left')
     patterns = pd.merge(routes[['route_id', 'route_short_name']], patterns, how='left')
     
-    '''
     # Old pattern logic
     # Manage directions
-    direction_0 = patterns.loc[patterns.direction_id == 0].reset_index().drop('index', axis=1)
-    direction_1 = patterns.loc[patterns.direction_id == 1].reset_index().drop('index', axis=1)
+    # direction_0 = patterns.loc[patterns.direction_id == 0].reset_index().drop('index', axis=1)
+    # direction_1 = patterns.loc[patterns.direction_id == 1].reset_index().drop('index', axis=1)
     
-    # Haversine formula
+    # # Haversine formula
 
-    def distancehav(point1, point2):
-        dLat = math.radians(point2.y) - math.radians(point1.y)
-        dLon = math.radians(point2.x) - math.radians(point1.x)
-        a = math.sin(dLat/2) * math.sin(dLat/2) + math.cos(math.radians(point1.y)) * math.cos(math.radians(point2.y)) * math.sin(dLon/2) * math.sin(dLon/2)
-        distance = 6371 * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-        distance = distance * 1000
-        return distance
+    # def distancehav(point1, point2):
+    #     dLat = math.radians(point2.y) - math.radians(point1.y)
+    #     dLon = math.radians(point2.x) - math.radians(point1.x)
+    #     a = math.sin(dLat/2) * math.sin(dLat/2) + math.cos(math.radians(point1.y)) * math.cos(math.radians(point2.y)) * math.sin(dLon/2) * math.sin(dLon/2)
+    #     distance = 6371 * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    #     distance = distance * 1000
+    #     return distance
 
-    # Assign patterns - 
-    # These are meant to match shapes in opposite directions under the same pattern 
-    # But they are not the final pattern name
-    # 1. whether the start & end locations exactly match (i.e. does the inbound direction end at the start of the outbound direction, and vice versa)
-    # 2. whether the start & end locations are within 400m of each other
-    # 3. the difference in the number of trips on each day of service
+    # # Assign patterns - 
+    # # These are meant to match shapes in opposite directions under the same pattern 
+    # # But they are not the final pattern name
+    # # 1. whether the start & end locations exactly match (i.e. does the inbound direction end at the start of the outbound direction, and vice versa)
+    # # 2. whether the start & end locations are within 400m of each other
+    # # 3. the difference in the number of trips on each day of service
 
-    assigned_patterns = pd.DataFrame()
+    # assigned_patterns = pd.DataFrame()
 
-    for r in patterns.route_short_name.unique():
-        t0 = direction_0.loc[direction_0.route_short_name==r]
-        t1 = direction_1.loc[direction_1.route_short_name==r]
+    # for r in patterns.route_short_name.unique():
+    #     t0 = direction_0.loc[direction_0.route_short_name==r]
+    #     t1 = direction_1.loc[direction_1.route_short_name==r]
     
-        if len(t0) >= len(t1):
-            longer = t0.reset_index()
-            shorter = t1.reset_index()
-        else:
-            longer = t1.reset_index()
-            shorter = t0.reset_index()
+    #     if len(t0) >= len(t1):
+    #         longer = t0.reset_index()
+    #         shorter = t1.reset_index()
+    #     else:
+    #         longer = t1.reset_index()
+    #         shorter = t0.reset_index()
     
-        ABC = list(ascii_uppercase) + [letter1+letter2 for letter1 in ascii_uppercase for letter2 in ascii_uppercase]
+    #     ABC = list(ascii_uppercase) + [letter1+letter2 for letter1 in ascii_uppercase for letter2 in ascii_uppercase]
 
-        longer['aux_pattern'] = ''
-        shorter['aux_pattern'] = ''
+    #     longer['aux_pattern'] = ''
+    #     shorter['aux_pattern'] = ''
     
-        for i in range(len(longer)):
-            longer.loc[i, 'aux_pattern'] = ABC[i]
-            nstops = longer.iloc[i]['nstops']
-            start_longer = longer.iloc[i]['startcoord']
-            end_longer = longer.iloc[i]['endcoord']
-            servicedays_longer = longer.iloc[i]['service_id']
+    #     for i in range(len(longer)):
+    #         longer.loc[i, 'aux_pattern'] = ABC[i]
+    #         nstops = longer.iloc[i]['nstops']
+    #         start_longer = longer.iloc[i]['startcoord']
+    #         end_longer = longer.iloc[i]['endcoord']
+    #         servicedays_longer = longer.iloc[i]['service_id']
     
-            for j in range(len(shorter)):
-                start_shorter = shorter.iloc[j]['startcoord']
-                end_shorter = shorter.iloc[j]['endcoord']
-                servicedays_shorter = shorter.iloc[j]['service_id']
-                condition_start = distancehav(start_shorter, end_longer) <= 400
-                condition_end = distancehav(start_longer, end_shorter) <= 400
-                some_days_in_common = len([id for id in servicedays_longer if id in servicedays_shorter])>0
-                condition3 = nstops*0.95 <= shorter.iloc[j]['nstops'] <= nstops*1.05
+    #         for j in range(len(shorter)):
+    #             start_shorter = shorter.iloc[j]['startcoord']
+    #             end_shorter = shorter.iloc[j]['endcoord']
+    #             servicedays_shorter = shorter.iloc[j]['service_id']
+    #             condition_start = distancehav(start_shorter, end_longer) <= 400
+    #             condition_end = distancehav(start_longer, end_shorter) <= 400
+    #             some_days_in_common = len([id for id in servicedays_longer if id in servicedays_shorter])>0
+    #             condition3 = nstops*0.95 <= shorter.iloc[j]['nstops'] <= nstops*1.05
 
-                if condition_start & condition_end & some_days_in_common: # & condition3: 
-                    shorter.loc[j, 'aux_pattern'] = ABC[i]
-                elif shorter.loc[j, 'aux_pattern'] == "":
-                    shorter.loc[j, 'aux_pattern'] = ABC[-i] # to assign a pattern for all unmatched
-                    break
+    #             if condition_start & condition_end & some_days_in_common: # & condition3: 
+    #                 shorter.loc[j, 'aux_pattern'] = ABC[i]
+    #             elif shorter.loc[j, 'aux_pattern'] == "":
+    #                 shorter.loc[j, 'aux_pattern'] = ABC[-i] # to assign a pattern for all unmatched
+    #                 break
 
-        assigned_patterns = pd.concat([assigned_patterns,longer])
-        assigned_patterns = pd.concat([assigned_patterns,shorter])
-        assigned_patterns.drop('index', inplace=True, axis=1)
+    #     assigned_patterns = pd.concat([assigned_patterns,longer])
+    #     assigned_patterns = pd.concat([assigned_patterns,shorter])
+    #     assigned_patterns.drop('index', inplace=True, axis=1)
 
-    '''
+    #
     # Intersection geometries I need #changed
     intersection1 = pd.merge(intersection, polys[['name']], how='left')
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['geometry'], axis=1), geometry = intersection1.geometry)
 
-    '''
+
     # Old pattern logic
     # Get actual number of stops, trips, trips per year and pattern distance
-    assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern','direction_id','shape_id']).aggregate({'nstops':'sum','pattern_dist':'sum','ntrips':'sum','trips_per_year':'max',}).reset_index()
-    assigned_patterns = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops','pattern_dist','ntrips','trips_per_year'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
-    '''
+    # assigned_patterns3 = assigned_patterns.groupby(['route_id', 'route_short_name','aux_pattern','direction_id','shape_id']).aggregate({'nstops':'sum','pattern_dist':'sum','ntrips':'sum','trips_per_year':'max',}).reset_index()
+    # assigned_patterns = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops','pattern_dist','ntrips','trips_per_year'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
+    
     # Merge all variables (trips per year and km per year)
     patterns1 = pd.merge(patterns[['route_short_name','route_id','service_id', 'shape_id','patternname', 'ntrips','trips_per_year','nstops','pattern_dist','direction_id']], intersection1, how='right') # Added trips per year
     patterns1 = patterns1.dropna(subset=['service_id'])
@@ -372,14 +369,12 @@ if uploaded_files != []:
     patterns2.reset_index(inplace=True)
     patterns2.drop('index', axis=1, inplace=True)
 
-    '''
     # Old pattern logic
     # Assigned patterns depending on the total trips for both directions combined
-    for r in assigned_patterns2.route_short_name.unique():
-        aux = assigned_patterns2.loc[assigned_patterns2.route_short_name==r]
-        pattern_list = list(ABC[0:len(aux)])
-        assigned_patterns2.loc[assigned_patterns2.route_short_name==r, 'pattern'] = pattern_list
-    '''
+    # for r in assigned_patterns2.route_short_name.unique():
+    #     aux = assigned_patterns2.loc[assigned_patterns2.route_short_name==r]
+    #     pattern_list = list(ABC[0:len(aux)])
+    #     assigned_patterns2.loc[assigned_patterns2.route_short_name==r, 'pattern'] = pattern_list
 
     # Merge dataframe with the real patterns and df with the municipalities
     df1 = patterns1[['route_short_name', 'patternname', 'shape_id', 'name', 'trips_per_year','km_in_poly','geometry','km_per_year','h_per_year']] # Added km_per_year and h_per_year
