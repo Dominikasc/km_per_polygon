@@ -325,6 +325,11 @@ if uploaded_files != []:
 
 
     # Intersection geometries I need #changed
+<<<<<<< HEAD
+=======
+        
+
+>>>>>>> febdaba09f051cec40fc3571f4bbd4822f8a7cfd
     intersection1 = pd.merge(intersection, polys[['name']], how='left')
     intersection1 = gpd.GeoDataFrame(data = intersection1.drop(['geometry'], axis=1), geometry = intersection1.geometry)
 
