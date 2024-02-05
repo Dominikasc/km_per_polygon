@@ -21,7 +21,7 @@ from shapely.geometry import LineString
 from shapely.geometry import Point 
 from shapely import ops 
 
-import pyproj 
+import pyproj
 
 import itertools
 import base64
@@ -184,7 +184,7 @@ if uploaded_files != []:
 
     # I need the original length per shape
     shapes.crs = {'init':'epsg:4326'}
-    shapes['km_in_shape'] = shapes.geometry.to_crs(32632).length/1000
+    shapes['km_in_shape'] = shapes.geometry.to_crs(localcrs).length/1000
 
     # Calculate intersection between shapes and polygons #changed
     #intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
@@ -217,7 +217,7 @@ if uploaded_files != []:
     # new test to find intersections
     intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
     intersection.crs = {'init':'epsg:4326'}
-    intersection['km_in_poly'] = intersection.geometry.to_crs(32632).length/1000
+    intersection['km_in_poly'] = intersection.geometry.to_crs(localcrs).length/1000
 
     intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
 
@@ -394,7 +394,7 @@ if uploaded_files != []:
     # --------------------------- APP -----------------------------------------------
     # -------------------------------------------------------------------------------
     # LAYING OUT THE TOP SECTION OF THE APP
-    st.header("Buskilometer pro Gebiet (geografische Grenze)")
+    st.header("Bus kilometer per Area (geografic boundary)")
     # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
     col1, col2, col3= st.columns((1, 3 ,2)) #NEW
         
@@ -412,11 +412,11 @@ if uploaded_files != []:
     
     with col1:
         st.subheader('Filter')
-        filter_polys = st.multiselect('Gebiet', poly_names_list)
-        filter_routes = st.multiselect('Linie', lines_names_list)
-        filter_patterns = st.multiselect('Variante', patterns_names_list)
+        filter_polys = st.multiselect('Area', poly_names_list)
+        filter_routes = st.multiselect('Line', lines_names_list)
+        filter_patterns = st.multiselect('Pattern', patterns_names_list)
         st.subheader('Pivot Dimensionen')
-        group_by = st.multiselect('Gruppieren', ['Gebiet', 'Linie', 'Variante'], default = ['Gebiet', 'Linie', 'Variante'])
+        group_by = st.multiselect('Group by', ['Gebiet', 'Linie', 'Variante'], default = ['Gebiet', 'Linie', 'Variante'])
         
     if filter_polys == []:
         filter_polys = poly_names_list
@@ -479,7 +479,7 @@ if uploaded_files != []:
     avg_lat = polys.geometry.centroid.y.mean()    
 
     with col2:
-        st.subheader('Total Kilometer per area = {}'.format(round(table_poly['Kilometer per area'].map(float).sum(),1)))
+        st.subheader('Total Kilometer per area = {}'.format(round(table_poly['Kilometer im Gebiet'].map(float).sum(),1)))
                     # Download data
 
         def get_table_download_link(df):
