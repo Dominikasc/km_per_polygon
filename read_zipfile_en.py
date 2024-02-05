@@ -240,7 +240,7 @@ if uploaded_files != []:
     trips_per_shape['trips_per_year'] = trips_per_shape['ntrips']*trips_per_shape['days_per_year']
     trips_per_shape['ntrips'] = trips_per_shape['ntrips']*trips_per_shape['service_days']
    
-    trips_per_shape = trips_per_shape.groupby(['route_id','shape_id','direction_id']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','trips_per_year':'sum'}).reset_index() # added service_id
+    trips_per_shape = trips_per_shape.groupby(['route_id','shape_id','direction_id','patternname']).aggregate({'service_id':lambda x: list(x),'ntrips':'sum','trips_per_year':'sum'}).reset_index() # added service_id
     #trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id','startcoord','endcoord']], how='left') # added start/end coordinates
     trips_per_shape =  pd.merge(trips_per_shape, shapes[['shape_id']], how='left')
     
@@ -338,8 +338,8 @@ if uploaded_files != []:
     # assigned_patterns = pd.merge(assigned_patterns.loc[:, ~assigned_patterns.columns.isin(['index','nstops','pattern_dist','ntrips','trips_per_year'])],assigned_patterns3,how='left').reset_index().sort_values(['route_short_name'])
     
     # Merge all variables (trips per year and km per year)
-    patterns1 = pd.merge(patterns[['route_short_name','route_id','service_id', 'shape_id','patternname', 'ntrips','trips_per_year','nstops','pattern_dist','direction_id']], intersection1, how='right') # Added trips per year
-    patterns1 = patterns1.dropna(subset=['service_id'])
+    patterns1 = pd.merge(patterns[['route_short_name','route_id','service_id', 'shape_id','patternname', 'ntrips','trips_per_year','nstops','pattern_dist','direction_id']], intersection1, how='right') # Added trips per year #update
+    patterns1 = patterns1.dropna(subset=['service_id']) #update
 
     # Check if shape was split - if not, use km_in_shape instead of km_in_poly
 
