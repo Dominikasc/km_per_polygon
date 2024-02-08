@@ -136,7 +136,10 @@ if uploaded_files != []:
         st.error('Please upload a stop_times.txt and trips.txt file')
     
     # I need the route_short_name in trips
-    trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
+    try:
+        trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
+    except NameError:
+        st.error('Please upload a route.txt and trips.txt file')
     
     #Replace route_id and get rid of route_id in trip_id
     trips['trip_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
