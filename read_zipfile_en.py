@@ -99,7 +99,10 @@ if uploaded_files != []:
 
     # Add the number of days per year 
 
-    calendar['days_per_year'] = 0
+    try:
+        calendar['days_per_year'] = 0
+    except NameError:
+        st.error('Please upload a calendar.txt')
     calendar.loc[calendar['monday']>0, 'days_per_year'] = calendar.loc[calendar['monday']>0, 'days_per_year'] + monday
     calendar.loc[calendar['tuesday']>0, 'days_per_year'] = calendar.loc[calendar['tuesday']>0, 'days_per_year'] + tuesday
     calendar.loc[calendar['wednesday']>0, 'days_per_year'] = calendar.loc[calendar['wednesday']>0, 'days_per_year'] + wednesday
