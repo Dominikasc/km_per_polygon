@@ -172,7 +172,14 @@ if uploaded_files != []:
     min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x),'days_per_year':'max','diff_kmh':'mean'}).reset_index()
     #min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x) # removed because it reduces the avg km/h
 
-    min_per_shape['patternname'] = min_per_shape['trip_id'].str.split('-').apply(lambda x:x[2]) #new
+    # Get split location for pattern
+    def splitloc(tripid):
+        loc = 2
+        if tripid.startswith('Service'):
+            loc = 3
+        return loc 
+    loc = splitloc(min_per_shape['trip_id'][1])
+    min_per_shape['patternname'] = min_per_shape['trip_id'].str.split('-').apply(lambda x:x[loc]) #new
 
     min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.departure_m)/(1000/60)
     min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id','patternname']).aggregate({'trip_id':'count','days_per_year':'max','departure_m':'sum','poly_kmh':'mean','diff_kmh':'mean'}).reset_index() #update
@@ -228,7 +235,7 @@ if uploaded_files != []:
     # If two patterns have the same number of trips, then the longer
     
     # Number of trips per shape
-    trips['patternname'] =  trips['trip_id'].str.split('-').apply(lambda x:x[2]) #add patternname per trip
+    trips['patternname'] =  trips['trip_id'].str.split('-').apply(lambda x:x[loc]) #add patternname per trip
     trips_per_shape0 = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id','service_id','patternname'], aggfunc='count').reset_index() #update
     trips_per_shape0.rename(columns = dict(trip_id = 'ntrips'), inplace=True)
     shapes.crs = {'init':'epsg:4326'} 
