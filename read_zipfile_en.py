@@ -242,6 +242,11 @@ if uploaded_files != []:
     # Pattern A is the one with more trips
     # If two patterns have the same number of trips, then the longer
     
+    # Get rid of route_id in trip_id
+    trips['trip_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
+    trips['route_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.route_id) , axis =1)
+    trips['trip_id'] = trips.apply(lambda row: re.sub(row.route_id,'', row.trip_id), axis =1)
+
     # Number of trips per shape
     trips['patternname'] =  trips['trip_id'].str.split('-').apply(lambda x:x[loc]) #add patternname per trip
     trips_per_shape0 = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id','service_id','patternname'], aggfunc='count').reset_index() #update
