@@ -30,8 +30,9 @@ import string
 import rtree 
 from string import ascii_uppercase 
 import datetime 
-import utm
-import re
+import utm #new
+import re #new
+import sys #new
 from st_aggrid import AgGrid, GridOptionsBuilder #NEW
 
 
@@ -103,6 +104,7 @@ if uploaded_files != []:
         calendar['days_per_year'] = 0
     except NameError:
         st.error('Please upload a calendar.txt')
+        sys.exit(1)
     calendar.loc[calendar['monday']>0, 'days_per_year'] = calendar.loc[calendar['monday']>0, 'days_per_year'] + monday
     calendar.loc[calendar['tuesday']>0, 'days_per_year'] = calendar.loc[calendar['tuesday']>0, 'days_per_year'] + tuesday
     calendar.loc[calendar['wednesday']>0, 'days_per_year'] = calendar.loc[calendar['wednesday']>0, 'days_per_year'] + wednesday
