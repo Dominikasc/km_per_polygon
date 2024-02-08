@@ -174,8 +174,8 @@ if uploaded_files != []:
     #min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x) # removed because it reduces the avg km/h
 
     # Get rid of route_id in trip_id
-    min_per_shape['trip_id'] = min_per_shape.apply(lambda row: re.sub(r"[\([{})\]]", '', row.trip_id) , axis =1)
-    min_per_shape['route_id'] = min_per_shape.apply(lambda row: re.sub(r"[\([{})\]]", '', row.route_id) , axis =1)
+    min_per_shape['trip_id'] = min_per_shape.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
+    min_per_shape['route_id'] = min_per_shape.apply(lambda row: re.sub(r"[\([{})\]]", "", row.route_id) , axis =1)
     min_per_shape['trip_id'] = min_per_shape.apply(lambda row: re.sub(row.route_id,'', row.trip_id), axis =1)
 
     # Get split location for pattern
