@@ -88,8 +88,43 @@ if uploaded_files != []:
             polys = gpd.read_file(file)
             polys = polys.to_crs(epsg=4326)
 
-    # Define number of days
+    # Check if all files were added  
+    try:
+        stop_times.head()
+    except:
+        print("Please upload a stop_times.txt file")
+    
+    try:
+        stops.head()
+    except:
+        print("Please upload a stops.txt file")
+    
+    try:
+        routes.head()
+    except:
+        print("Please upload a routes.txt file")
+    
+    try:
+        trips.head()
+    except:
+        print("Please upload a trips.txt file")
 
+    try:
+        calendar.head()
+    except:
+        print("Please upload a calendar.txt file")
+
+    try:
+        shapes.head()
+    except:
+        print("Please upload a shapes.txt file")
+
+    try:
+        polys.head()
+    except:
+        print("Please upload a features.geojson file")
+
+    # Define number of days
     monday = st.sidebar.number_input('Mondays', value=51)
     tuesday = st.sidebar.number_input('Tuesdays', value=51)
     wednesday = st.sidebar.number_input('Wednesdays', value=51)
