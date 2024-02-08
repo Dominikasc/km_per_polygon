@@ -88,42 +88,6 @@ if uploaded_files != []:
             polys = gpd.read_file(file)
             polys = polys.to_crs(epsg=4326)
 
-    # Check if all files were added  
-    try:
-        stop_times.head()
-    except:
-        print("Please upload a stop_times.txt file")
-    
-    try:
-        stops.head()
-    except:
-        print("Please upload a stops.txt file")
-    
-    try:
-        routes.head()
-    except:
-        print("Please upload a routes.txt file")
-    
-    try:
-        trips.head()
-    except:
-        print("Please upload a trips.txt file")
-
-    try:
-        calendar.head()
-    except:
-        print("Please upload a calendar.txt file")
-
-    try:
-        shapes.head()
-    except:
-        print("Please upload a shapes.txt file")
-
-    try:
-        polys.head()
-    except:
-        print("Please upload a features.geojson file")
-
     # Define number of days
     monday = st.sidebar.number_input('Mondays', value=51)
     tuesday = st.sidebar.number_input('Tuesdays', value=51)
@@ -166,7 +130,10 @@ if uploaded_files != []:
     localcrs = code(aux)
     
     # I need the route_id in stop_times
-    stop_times = pd.merge(stop_times, trips, how='left')
+    try:
+        stop_times = pd.merge(stop_times, trips, how='left')
+    except NameError:
+        st.error('Please upload a stop_times.txt and trips.txt file')
     
     # I need the route_short_name in trips
     trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
