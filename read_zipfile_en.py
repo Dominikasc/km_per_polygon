@@ -136,8 +136,17 @@ if uploaded_files != []:
     # I need the route_short_name in trips
     trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
     
-    # I need the start and end coordinate in shapes
+    #Replace route_id and get rid of route_id in trip_id
+    trips['trip_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
+    trips['route_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.route_id) , axis =1)
+    trips['trip_id'] = trips.apply(lambda row: re.sub(row.route_id,'', row.trip_id), axis =1)
 
+    routes['route_id'] = routes.apply(lambda row: re.sub(r"[\([{})\]]", "", row.route_id) , axis =1)
+    stop_times['trip_id'] = stop_times.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
+    stop_times['route_id'] = stop_times.apply(lambda row: re.sub(r"[\([{})\]]", "", row.route_id) , axis =1)
+    stop_times['trip_id'] = stop_times.apply(lambda row: re.sub(row.route_id,'', row.trip_id), axis =1)
+
+    # I need the start and end coordinate in shapes
     def startcoord(row):
         first = Point(row['geometry'].coords[0])
         return first
@@ -172,11 +181,6 @@ if uploaded_files != []:
     # Get minutes per shape - needed to calculate driven hours in polygon
     min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x),'days_per_year':'max','diff_kmh':'mean'}).reset_index()
     #min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x) # removed because it reduces the avg km/h
-
-    # Get rid of route_id in trip_id
-    min_per_shape['trip_id'] = min_per_shape.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
-    min_per_shape['route_id'] = min_per_shape.apply(lambda row: re.sub(r"[\([{})\]]", "", row.route_id) , axis =1)
-    min_per_shape['trip_id'] = min_per_shape.apply(lambda row: re.sub(row.route_id,'', row.trip_id), axis =1)
 
     # Get split location for pattern
     def splitloc(tripid):
@@ -241,11 +245,6 @@ if uploaded_files != []:
     # Get the patters with the same criteria as Remix
     # Pattern A is the one with more trips
     # If two patterns have the same number of trips, then the longer
-    
-    # Get rid of route_id in trip_id
-    trips['trip_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
-    trips['route_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.route_id) , axis =1)
-    trips['trip_id'] = trips.apply(lambda row: re.sub(row.route_id,'', row.trip_id), axis =1)
 
     # Number of trips per shape
     trips['patternname'] =  trips['trip_id'].str.split('-').apply(lambda x:x[loc]) #add patternname per trip
