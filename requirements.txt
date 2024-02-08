@@ -7,4 +7,5 @@ rtree==1.0.1
 numpy==1.25.0
 streamlit-aggrid==0.3.2
 utm==0.7.0
+re==0
 #streamlit-aggrid==0.2.3
