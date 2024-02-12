@@ -194,7 +194,7 @@ if uploaded_files != []:
 
     try:
         stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
-    except NameError:
+    except KeyError:
         st.error('The geojson file is missing a column called "name"')
         sys.exit(1)
 
