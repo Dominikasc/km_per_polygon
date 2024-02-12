@@ -30,8 +30,9 @@ import string
 import rtree 
 from string import ascii_uppercase 
 import datetime 
-import utm
-import re
+import utm #new
+import re #new
+import sys #new
 from st_aggrid import AgGrid, GridOptionsBuilder #NEW
 
 
@@ -89,7 +90,6 @@ if uploaded_files != []:
             polys = polys.to_crs(epsg=4326)
 
     # Define number of days
-
     monday = st.sidebar.number_input('Mondays', value=51)
     tuesday = st.sidebar.number_input('Tuesdays', value=51)
     wednesday = st.sidebar.number_input('Wednesdays', value=51)
@@ -100,7 +100,11 @@ if uploaded_files != []:
 
     # Add the number of days per year 
 
-    calendar['days_per_year'] = 0
+    try:
+        calendar['days_per_year'] = 0
+    except NameError:
+        st.error('Please upload a calendar.txt')
+        sys.exit(1)
     calendar.loc[calendar['monday']>0, 'days_per_year'] = calendar.loc[calendar['monday']>0, 'days_per_year'] + monday
     calendar.loc[calendar['tuesday']>0, 'days_per_year'] = calendar.loc[calendar['tuesday']>0, 'days_per_year'] + tuesday
     calendar.loc[calendar['wednesday']>0, 'days_per_year'] = calendar.loc[calendar['wednesday']>0, 'days_per_year'] + wednesday
@@ -128,13 +132,26 @@ if uploaded_files != []:
         
         return epsg_code
     
-    localcrs = code(aux)
+    try:
+        localcrs = code(aux)
+    except NameError:
+        st.error('Please upload a shapes.txt')
+        sys.exit(1)
+    
     
     # I need the route_id in stop_times
-    stop_times = pd.merge(stop_times, trips, how='left')
+    try:
+        stop_times = pd.merge(stop_times, trips, how='left')
+    except NameError:
+        st.error('Please upload a stop_times.txt and trips.txt file')
+        sys.exit(1)
     
     # I need the route_short_name in trips
-    trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
+    try:
+        trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
+    except NameError:
+        st.error('Please upload a route.txt file')
+        sys.exit(1)
     
     #Replace route_id and get rid of route_id in trip_id
     trips['trip_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
@@ -159,13 +176,28 @@ if uploaded_files != []:
     shapes['endcoord'] = shapes.apply(lambda row: endcoord(row), axis=1)
     
     # Create GDF from points
-    geometry = [Point(xy) for xy in zip(stops.stop_lon, stops.stop_lat)]
+    try:
+        geometry = [Point(xy) for xy in zip(stops.stop_lon, stops.stop_lat)]
+    except NameError:
+        st.error('Please upload a stops.txt file')
+        sys.exit(1)
+
     stops = stops.drop(['stop_lon', 'stop_lat'], axis=1)
     stops_gdf = GeoDataFrame(stops, crs="EPSG:4326", geometry=geometry)
 
     # Get polygon by stop
-    stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
-    stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
+    try:
+        stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
+    except NameError:
+        st.error('Please upload a polygon file named features.geojson')
+        sys.exit(1)
+
+    try:
+        stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
+    except KeyError:
+        st.error('The geojson file is missing a column called "name"')
+        sys.exit(1)
+
     stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
 
     # Add service_days to stop_times for ntrips calculation
