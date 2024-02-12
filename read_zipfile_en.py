@@ -441,10 +441,6 @@ if uploaded_files != []:
 
     try_this = try_this_fun(trips,shapes,calendar,stop_times,routes,min_per_shape2)
 
-    # Assign color to patterns
-    color_lookup = pdk.data_utils.assign_random_colors(try_this['patternname'])
-    try_this['color'] = try_this.apply(lambda row: color_lookup.get(row['patternname']), axis=1)
-
     # This is what I need to draw the map
     # I have the fields to filter by route and county
     
