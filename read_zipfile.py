@@ -196,7 +196,7 @@ if uploaded_files != []:
     stop_times['diff_kmh'] = (stop_times.diff_dist/stop_times.diff_min)/(1000/60)
     stop_times = stop_times.replace([np.inf, -np.inf],np.nan)    
 
-    @st.cache_data
+#    @st.cache_data
     def shapes_fun(s):
         # I need the start and end coordinate in shapes
 
