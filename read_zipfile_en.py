@@ -44,21 +44,6 @@ st.set_page_config(layout="wide")
 st.sidebar.header('Data Upload')
 uploaded_files = st.sidebar.file_uploader('Please upload routes.txt, stops.txt, trips.txt, stop_times.txt, calendar.txt, shapes.txt and features.geojson from Remix.', accept_multiple_files=True, type=['txt','geojson'])
 
-# Get the polygons
-# polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/features.geojson")
-# polys = gpd.read_file(next(iglob('*.csv')))
-# polylist = glob.glob("*.geojson")  # Get all geojson files in the current folder
-
-# pli = []
-
-# for filename in polylist:
-#     pf = gpd.read_file(filename)
-#     pli.append(pf)
-
-# polys = gpd.GeoDataFrame(pd.concat(pli, ignore_index=True))
-# polys = polys.to_crs(epsg=4326)
-
-
 # get files
 # Upload files from GTFS
 if uploaded_files != []:
