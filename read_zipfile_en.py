@@ -186,7 +186,12 @@ if uploaded_files != []:
     stops_gdf = GeoDataFrame(stops, crs="EPSG:4326", geometry=geometry)
 
     # Get polygon by stop
-    stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
+    try:
+        stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
+    except NameError:
+        st.error('Please upload a polygon file named features.geojson file')
+        sys.exit(1)
+
     stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
     stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
 
