@@ -75,13 +75,13 @@ if uploaded_files != []:
 
     # Define number of days
 
-    monday = st.sidebar.number_input('Montage im Jahr', value=50)
+    monday = st.sidebar.number_input('Montage im Jahr', value=51)
     tuesday = st.sidebar.number_input('Dienstage im Jahr', value=51)
-    wednesday = st.sidebar.number_input('Mittwoche im Jahr', value=50)
-    thursday = st.sidebar.number_input('Donnerstage im Jahr', value=50)
-    friday = st.sidebar.number_input('Freitage im Jahr', value=50)
-    saturday = st.sidebar.number_input('Samstage im Jahr', value=52)
-    sunday = st.sidebar.number_input('Sonntage im Jahr', value=62)
+    wednesday = st.sidebar.number_input('Mittwoche im Jahr', value=51)
+    thursday = st.sidebar.number_input('Donnerstage im Jahr', value=51)
+    friday = st.sidebar.number_input('Freitage im Jahr', value=51)
+    saturday = st.sidebar.number_input('Samstage im Jahr', value=55)
+    sunday = st.sidebar.number_input('Sonntage im Jahr', value=55)
 
     # Functions I need
     def startcoord(row):
