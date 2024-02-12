@@ -31,6 +31,8 @@ import rtree
 from string import ascii_uppercase 
 import datetime 
 import utm
+import re #new
+import sys #new
 from st_aggrid import AgGrid, GridOptionsBuilder #NEW
 
 
@@ -41,21 +43,6 @@ from st_aggrid import AgGrid, GridOptionsBuilder #NEW
 st.set_page_config(layout="wide")
 st.sidebar.header('Datenupload')
 uploaded_files = st.sidebar.file_uploader('Laden Sie routes.txt, stops.txt, trips.txt, stop_times.txt, calendar.txt, shapes.txt und features.geojson aus Remix hoch', accept_multiple_files=True, type=['txt','geojson'])
-
-# Get the polygons
-# polys = gpd.read_file("https://raw.githubusercontent.com/Dominikasc/km_per_polygon/main/data/features.geojson")
-# polys = gpd.read_file(next(iglob('*.csv')))
-# polylist = glob.glob("*.geojson")  # Get all geojson files in the current folder
-
-# pli = []
-
-# for filename in polylist:
-#     pf = gpd.read_file(filename)
-#     pli.append(pf)
-
-# polys = gpd.GeoDataFrame(pd.concat(pli, ignore_index=True))
-# polys = polys.to_crs(epsg=4326)
-
 
 # get files
 # Upload files from GTFS
@@ -99,7 +86,11 @@ if uploaded_files != []:
 
     # Add the number of days per year 
 
-    calendar['days_per_year'] = 0
+    try:
+        calendar['days_per_year'] = 0
+    except NameError:
+        st.error('Bitte lade die "calendar.txt" Datei hoch')
+        sys.exit(1)
     calendar.loc[calendar['monday']>0, 'days_per_year'] = calendar.loc[calendar['monday']>0, 'days_per_year'] + monday
     calendar.loc[calendar['tuesday']>0, 'days_per_year'] = calendar.loc[calendar['tuesday']>0, 'days_per_year'] + tuesday
     calendar.loc[calendar['wednesday']>0, 'days_per_year'] = calendar.loc[calendar['wednesday']>0, 'days_per_year'] + wednesday
@@ -127,13 +118,25 @@ if uploaded_files != []:
         
         return epsg_code
     
-    localcrs = code(aux)
-    
+    try:
+        localcrs = code(aux)
+    except NameError:
+        st.error('Bitte lade die "shapes.txt" Datei hoch')
+        sys.exit(1)
+
     # I need the route_id in stop_times
-    stop_times = pd.merge(stop_times, trips, how='left')
+    try:
+        stop_times = pd.merge(stop_times, trips, how='left')
+    except NameError:
+        st.error('Bitte lade die "stop_times.txt" und "trips.txt" Datei hoch')
+        sys.exit(1)
     
     # I need the route_short_name in trips
-    trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
+    try:
+        trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
+    except NameError:
+        st.error('Bitte lade die "route.txt" Datei hoch')
+        sys.exit(1)
     
     # I need the start and end coordinate in shapes
 
@@ -148,14 +151,28 @@ if uploaded_files != []:
     shapes['startcoord'] = shapes.apply(lambda row: startcoord(row), axis=1)
     shapes['endcoord'] = shapes.apply(lambda row: endcoord(row), axis=1)
     
-    # Create GDF from points
-    geometry = [Point(xy) for xy in zip(stops.stop_lon, stops.stop_lat)]
+        # Create GDF from points
+    try:
+        geometry = [Point(xy) for xy in zip(stops.stop_lon, stops.stop_lat)]
+    except NameError:
+        st.error('Bitte lade die "stops.txt" Datei hoch')
+        sys.exit(1)
+
     stops = stops.drop(['stop_lon', 'stop_lat'], axis=1)
     stops_gdf = GeoDataFrame(stops, crs="EPSG:4326", geometry=geometry)
 
     # Get polygon by stop
-    stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
-    stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
+    try:
+        stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
+    except NameError:
+        st.error('Bitte lade eine Polygon Datei mit Namen "features.geojson" hoch')
+        sys.exit(1)
+
+    try:
+        stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
+    except KeyError:
+        st.error('Die Geojson Datei benötigt die Spalte "name"')
+        sys.exit(1)
     stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
 
     # Add service_days to stop_times for ntrips calculation
