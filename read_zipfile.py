@@ -253,7 +253,7 @@ if uploaded_files != []:
     shapes.crs = {'init':'epsg:4326'} 
     shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326 # CRS.from_epsg() --> deprecation warning
 
-    @st.cache_data
+#    @st.cache_data
     def try_this_fun(trips,shapes,calendar,stop_times,routes,min_per_shape2):
         trips_per_shape0 = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id','service_id','patternname'], aggfunc='count').reset_index()
         trips_per_shape0.rename(columns = dict(trip_id = 'ntrips'), inplace=True)   
@@ -328,7 +328,7 @@ if uploaded_files != []:
 
     try_this = try_this_fun(trips,shapes,calendar,stop_times,routes,min_per_shape2)
 
-    @st.cache_data
+#    @st.cache_data
     def table_fun(try_this):
         table = try_this.pivot_table(['trips_per_year','km_in_poly','km_per_year','h_per_year'], index=['route_short_name', 'patternname', 'name'], aggfunc='sum').reset_index() # Added km_per_year and h_per_year
         table.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', patternname = 'Variante',trips_per_year='Fahrten pro Jahr', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr', h_per_year = 'Stunden im Jahr'), inplace=True)
@@ -338,7 +338,7 @@ if uploaded_files != []:
 
     # This is what I need to draw the map
     # I have the fields to filter by route and county
-    @st.cache_data
+#    @st.cache_data
     def gdf_intersections_fun(try_this):
         gdf_intersections = gpd.GeoDataFrame(data = try_this[['route_short_name', 'name', 'patternname','color']], geometry = try_this.geometry)
         gdf_intersections.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', patternname = 'Variante', color = 'Color'), inplace=True)
