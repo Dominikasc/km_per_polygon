@@ -189,10 +189,15 @@ if uploaded_files != []:
     try:
         stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
     except NameError:
-        st.error('Please upload a polygon file named features.geojson file')
+        st.error('Please upload a polygon file named features.geojson')
         sys.exit(1)
 
-    stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
+    try:
+        stop_times = pd.merge(stop_times, stops_poly.loc[:,['stop_id','name']], how='left')
+    except NameError:
+        st.error('The geojson file is missing a column called "name"')
+        sys.exit(1)
+
     stop_times['departure_m'] = (stop_times['departure_time'].str.split(':').apply(lambda x:x[0]).astype(int)*60)+(stop_times['departure_time'].str.split(':').apply(lambda x:x[1]).astype(int))+(stop_times['departure_time'].str.split(':').apply(lambda x:x[2]).astype(int)/60)
 
     # Add service_days to stop_times for ntrips calculation
