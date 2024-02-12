@@ -196,7 +196,7 @@ if uploaded_files != []:
     stop_times['diff_kmh'] = (stop_times.diff_dist/stop_times.diff_min)/(1000/60)
     stop_times = stop_times.replace([np.inf, -np.inf],np.nan)    
 
-#    @st.cache_data
+    @st.cache_data(ttl=3600)
     def shapes_fun(s):
         # I need the start and end coordinate in shapes
 
@@ -232,7 +232,7 @@ if uploaded_files != []:
     min_per_shape3 = min_per_shape2.groupby(['name']).aggregate({'poly_kmh':'mean'}).reset_index()
     dict_min_per_shape = min_per_shape3.set_index('name')['poly_kmh'].to_dict()
 
-#    @st.cache_data
+    @st.cache_data(ttl=3600)
     def intersection_fun(shapes,polys,localcrs):
         # new test to find intersections
         intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
@@ -253,7 +253,7 @@ if uploaded_files != []:
     shapes.crs = {'init':'epsg:4326'} 
     shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326 # CRS.from_epsg() --> deprecation warning
 
-#    @st.cache_data
+    @st.cache_data(ttl=3600)
     def try_this_fun(trips,shapes,calendar,stop_times,routes,min_per_shape2):
         trips_per_shape0 = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id','service_id','patternname'], aggfunc='count').reset_index()
         trips_per_shape0.rename(columns = dict(trip_id = 'ntrips'), inplace=True)   
@@ -328,7 +328,7 @@ if uploaded_files != []:
 
     try_this = try_this_fun(trips,shapes,calendar,stop_times,routes,min_per_shape2)
 
-#    @st.cache_data
+    @st.cache_data(ttl=3600)
     def table_fun(try_this):
         table = try_this.pivot_table(['trips_per_year','km_in_poly','km_per_year','h_per_year'], index=['route_short_name', 'patternname', 'name'], aggfunc='sum').reset_index() # Added km_per_year and h_per_year
         table.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', patternname = 'Variante',trips_per_year='Fahrten pro Jahr', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr', h_per_year = 'Stunden im Jahr'), inplace=True)
