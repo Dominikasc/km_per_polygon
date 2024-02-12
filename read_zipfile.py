@@ -197,17 +197,17 @@ if uploaded_files != []:
     stop_times = stop_times.replace([np.inf, -np.inf],np.nan)    
 
     @st.cache_data(ttl=3600)
-    def shapes_fun(_s):
+    def shapes_fun(_shapes):
         # I need the start and end coordinate in shapes
 
-        s['startcoord'] = s.apply(lambda row: startcoord(row), axis=1)
-        s['endcoord'] = s.apply(lambda row: endcoord(row), axis=1)
+        shapes['startcoord'] = shapes.apply(lambda row: startcoord(row), axis=1)
+        shapes['endcoord'] = shapes.apply(lambda row: endcoord(row), axis=1)
 
         # I need the original length per shape
-        s.crs = {'init':'epsg:4326'}
-        s['km_in_shape'] = s.geometry.to_crs(localcrs).length/1000
+        shapes.crs = {'init':'epsg:4326'}
+        shapes['km_in_shape'] = shapes.geometry.to_crs(localcrs).length/1000
         
-        return s
+        return shapes
     
     shapes = shapes_fun(shapes)
 
