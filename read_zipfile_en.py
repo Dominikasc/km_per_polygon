@@ -176,7 +176,12 @@ if uploaded_files != []:
     shapes['endcoord'] = shapes.apply(lambda row: endcoord(row), axis=1)
     
     # Create GDF from points
-    geometry = [Point(xy) for xy in zip(stops.stop_lon, stops.stop_lat)]
+    try:
+        geometry = [Point(xy) for xy in zip(stops.stop_lon, stops.stop_lat)]
+    except NameError:
+        st.error('Please upload a stops.txt file')
+        sys.exit(1)
+
     stops = stops.drop(['stop_lon', 'stop_lat'], axis=1)
     stops_gdf = GeoDataFrame(stops, crs="EPSG:4326", geometry=geometry)
 
