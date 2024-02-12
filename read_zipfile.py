@@ -138,6 +138,16 @@ if uploaded_files != []:
         st.error('Bitte lade die "route.txt" Datei hoch')
         sys.exit(1)
     
+    #Replace route_id and get rid of route_id in trip_id
+    trips['trip_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
+    trips['route_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.route_id) , axis =1)
+    trips['trip_id'] = trips.apply(lambda row: re.sub(row.route_id,'', row.trip_id), axis =1)
+
+    routes['route_id'] = routes.apply(lambda row: re.sub(r"[\([{})\]]", "", row.route_id) , axis =1)
+    stop_times['trip_id'] = stop_times.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
+    stop_times['route_id'] = stop_times.apply(lambda row: re.sub(r"[\([{})\]]", "", row.route_id) , axis =1)
+    stop_times['trip_id'] = stop_times.apply(lambda row: re.sub(row.route_id,'', row.trip_id), axis =1)
+    
     # I need the start and end coordinate in shapes
 
     def startcoord(row):
