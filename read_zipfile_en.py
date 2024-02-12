@@ -132,19 +132,26 @@ if uploaded_files != []:
         
         return epsg_code
     
-    localcrs = code(aux)
+    try:
+        localcrs = code(aux)
+    except NameError:
+        st.error('Please upload a shapes.txt')
+        sys.exit(1)
+    
     
     # I need the route_id in stop_times
     try:
         stop_times = pd.merge(stop_times, trips, how='left')
     except NameError:
         st.error('Please upload a stop_times.txt and trips.txt file')
+        sys.exit(1)
     
     # I need the route_short_name in trips
     try:
         trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
     except NameError:
-        st.error('Please upload a route.txt and trips.txt file')
+        st.error('Please upload a route.txt file')
+        sys.exit(1)
     
     #Replace route_id and get rid of route_id in trip_id
     trips['trip_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
