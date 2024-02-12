@@ -196,8 +196,8 @@ if uploaded_files != []:
     stop_times['diff_kmh'] = (stop_times.diff_dist/stop_times.diff_min)/(1000/60)
     stop_times = stop_times.replace([np.inf, -np.inf],np.nan)    
 
-    #@st.cache_data(ttl=3600)
-    def shapes_fun(s):
+    @st.cache_data(ttl=3600)
+    def shapes_fun(_s):
         # I need the start and end coordinate in shapes
 
         s['startcoord'] = s.apply(lambda row: startcoord(row), axis=1)
@@ -232,8 +232,8 @@ if uploaded_files != []:
     min_per_shape3 = min_per_shape2.groupby(['name']).aggregate({'poly_kmh':'mean'}).reset_index()
     dict_min_per_shape = min_per_shape3.set_index('name')['poly_kmh'].to_dict()
 
-    #@st.cache_data(ttl=3600)
-    def intersection_fun(shapes,polys,localcrs):
+    @st.cache_data(ttl=3600)
+    def intersection_fun(_shapes,polys,localcrs):
         # new test to find intersections
         intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
         intersection.crs = {'init':'epsg:4326'}
