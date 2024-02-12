@@ -233,7 +233,7 @@ if uploaded_files != []:
     dict_min_per_shape = min_per_shape3.set_index('name')['poly_kmh'].to_dict()
 
     @st.cache_data(ttl=3600)
-    def intersection_fun(_shapes,polys,localcrs):
+    def intersection_fun(_shapes,_polys,localcrs):
         # new test to find intersections
         intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
         intersection.crs = {'init':'epsg:4326'}
