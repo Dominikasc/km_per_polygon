@@ -299,7 +299,7 @@ if uploaded_files != []:
     # I have the fields to filter by route and county
     try_this = pd.merge(df1, df2, how='left')
     table = try_this.pivot_table(['trips_per_year','km_in_poly','km_per_year','h_per_year'], index=['route_short_name', 'patternname', 'name'], aggfunc='sum').reset_index() # Added km_per_year and h_per_year
-    table.rename(columns = dict(route_short_name = 'Line', name = 'Area', patternname = 'Pattern',trips_per_year='Fahrten pro Jahr', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr', h_per_year = 'Stunden im Jahr'), inplace=True)
+    table.rename(columns = dict(route_short_name = 'Linie', name = 'Gebiet', patternname = 'Variante',trips_per_year='Fahrten pro Jahr', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr', h_per_year = 'Stunden im Jahr'), inplace=True)
     
     # Assign color to patterns
     color_lookup = pdk.data_utils.assign_random_colors(try_this['patternname'])
