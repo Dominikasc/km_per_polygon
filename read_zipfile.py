@@ -253,7 +253,7 @@ if uploaded_files != []:
     shapes.crs = {'init':'epsg:4326'} 
     shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326 # CRS.from_epsg() --> deprecation warning
 
-    @st.cache_data(ttl=3600)
+    #@st.cache_data(ttl=3600)
     def try_this_fun(trips,shapes,calendar,stop_times,routes,min_per_shape2):
         trips_per_shape0 = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id','service_id','patternname'], aggfunc='count').reset_index()
         trips_per_shape0.rename(columns = dict(trip_id = 'ntrips'), inplace=True)   
