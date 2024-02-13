@@ -297,13 +297,13 @@ if uploaded_files != []:
         patterns1 = pd.merge(patterns[['route_short_name','route_id','service_id', 'shape_id','patternname', 'ntrips','trips_per_year','nstops','pattern_dist','direction_id']], intersection1, how='right') # Added trips per year #update
         patterns1 = patterns1.dropna(subset=['service_id']) #update
 
-        # Check if shape was split - if not, use km_in_shape instead of miles_in_poly
+        # Check if shape was split - if not, use km_in_shape instead of km_in_poly
 
         replace_length = patterns1.groupby(['route_short_name', 'patternname','shape_id'])['ntrips'].count().reset_index()
         replace_length.rename(columns = dict(ntrips = 'split'), inplace=True)
         patterns1 = pd.merge(patterns1, replace_length, how='left',on=['route_short_name', 'patternname','shape_id']) # Added split count
 
-        patterns1['miles_in_poly'] = np.where(patterns1['split'] < 2, patterns1['km_in_shape'],patterns1['miles_in_poly'])
+        patterns1['km_in_poly'] = np.where(patterns1['split'] < 2, patterns1['km_in_shape'],patterns1['km_in_poly'])
 
         #replace poly_kmh with diff_kmh if NaN
         min_per_shape2 = min_per_shape2.dropna(subset=['service_id'])
@@ -314,23 +314,27 @@ if uploaded_files != []:
         min_per_shape2.service_id = min_per_shape2.service_id.apply(tuple)
         patterns1 = pd.merge(patterns1, min_per_shape2,on=['route_id','service_id', 'shape_id','name','direction_id','patternname'],how='left') # Added poly_kmh
         patterns1["poly_kmh"] = patterns1.poly_kmh.fillna(patterns1.name.map(dict_min_per_shape)) #fillna with fallback kmh (average per polygon)
-        patterns1['poly_m'] = (patterns1.miles_in_poly / patterns1.poly_kmh)*60 # calculate minutes per polygon
+        patterns1['poly_m'] = (patterns1.km_in_poly / patterns1.poly_kmh)*60 # calculate minutes per polygon
 
         # Get km and hours per year 
-        patterns1['km_per_year'] = patterns1.miles_in_poly * patterns1.trips_per_year     # Add km per year
+        patterns1['km_per_year'] = patterns1.km_in_poly * patterns1.trips_per_year     # Add km per year
         patterns1['h_per_year'] = (patterns1.poly_m * patterns1.trips_per_year)/60     # Add hours per year
 
-        patterns2 = patterns1.groupby(['route_short_name', 'patternname']).aggregate({'nstops':'max','ntrips_y':'sum','trips_per_year':'sum','miles_in_poly':'sum','km_per_year':'sum','pattern_dist':'max','h_per_year':'sum'}).reset_index().sort_values(by = ['route_short_name','ntrips_y'], ascending=False) # New
+        patterns2 = patterns1.groupby(['route_short_name', 'patternname']).aggregate({'nstops':'max','ntrips_y':'sum','trips_per_year':'sum','km_in_poly':'sum','km_per_year':'sum','pattern_dist':'max','h_per_year':'sum'}).reset_index().sort_values(by = ['route_short_name','ntrips_y'], ascending=False) # New
         patterns2.reset_index(inplace=True)
         patterns2.drop('index', axis=1, inplace=True)
 
         # Merge dataframe with the real patterns and df with the municipalities
-        df1 = patterns1[['route_short_name', 'patternname', 'shape_id', 'name', 'trips_per_year','miles_in_poly','geometry','km_per_year','h_per_year']] # Added km_per_year and h_per_year
+        df1 = patterns1[['route_short_name', 'patternname', 'shape_id', 'name', 'trips_per_year','km_in_poly','geometry','km_per_year','h_per_year']] # Added km_per_year and h_per_year
         df2 = patterns2[['route_short_name', 'patternname']]
         
         # This is what I need to show the table
         # I have the fields to filter by route and county
         try_this = pd.merge(df1, df2, how='left')
+
+        # transform to miles
+        try_this['km_in_poly'] = try_this.apply(lambda row: row['km_in_poly']*0.6213711922, axis=1)
+        try_this['km_per_year'] = try_this.apply(lambda row: row['km_per_year']*0.6213711922, axis=1)
 
         # Assign color to patterns
         color_lookup = pdk.data_utils.assign_random_colors(try_this['patternname'])
@@ -344,8 +348,8 @@ if uploaded_files != []:
     
     @st.cache_data(ttl=180)
     def table_fun(try_this):
-        table = try_this.pivot_table(['trips_per_year','miles_in_poly','km_per_year','h_per_year'], index=['route_short_name', 'patternname', 'name'], aggfunc='sum').reset_index() # Added km_per_year and h_per_year
-        table.rename(columns = dict(route_short_name = 'Line', name = 'Area', patternname = 'Pattern',trips_per_year='Fahrten pro Jahr', miles_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr', h_per_year = 'Stunden im Jahr'), inplace=True)
+        table = try_this.pivot_table(['trips_per_year','km_in_poly','km_per_year','h_per_year'], index=['route_short_name', 'patternname', 'name'], aggfunc='sum').reset_index() # Added km_per_year and h_per_year
+        table.rename(columns = dict(route_short_name = 'Line', name = 'Area', patternname = 'Pattern',trips_per_year='Fahrten pro Jahr', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr', h_per_year = 'Stunden im Jahr'), inplace=True)
         return table
 
     table = table_fun(try_this)
@@ -492,7 +496,7 @@ if uploaded_files != []:
             field="Kilometer im Gebiet",
             header_name="Miles/Area",
             width=100,
-            tooltipField="Kilometer per Area",
+            tooltipField="Miles per Area",
             type=["numericColumn"],
         ) #NEW
 
@@ -500,7 +504,7 @@ if uploaded_files != []:
             field="Kilometer im Jahr",
             header_name="Miles/year",
             width=100,
-            tooltipField="Kilometer per year",
+            tooltipField="Miles per year",
             type=["numericColumn"],
         ) #NEW
 
