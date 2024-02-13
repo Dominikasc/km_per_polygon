@@ -136,27 +136,27 @@ if uploaded_files != []:
     try:
         localcrs = code(aux)
     except NameError:
-        st.error('Please upload a shapes.txt')
+        st.error('Please upload a "shapes.txt"')
         sys.exit(1)
     
         # Convert route_id to str
     try:
-        trips.route_id = trips.route_id.astype(str)
+        trips['route_id'] = trips['route_id'].apply(str)
     except NameError:
-        st.error('Bitte lade die "trips.txt" Datei hoch')
+        st.error('Please upload a "trips.txt"')
         sys.exit(1)
     
     try:
-        routes.route_id = routes.route_id.astype(str)
+        routes['route_id'] = routes['route_id'].apply(str)
     except NameError:
-        st.error('Bitte lade die "route.txt" Datei hoch')
+        st.error('Please upload a "route.txt"')
         sys.exit(1)
 
     # I need the route_id in stop_times
     try:
         stop_times = pd.merge(stop_times, trips, how='left')
     except NameError:
-        st.error('Bitte lade die "stop_times.txt" Datei hoch')
+        st.error('Please upload a "stop_times.txt"')
         sys.exit(1)
     
     # I need the route_short_name in trips
@@ -176,7 +176,7 @@ if uploaded_files != []:
     try:
         geometry = [Point(xy) for xy in zip(stops.stop_lon, stops.stop_lat)]
     except NameError:
-        st.error('Please upload a stops.txt file')
+        st.error('Please upload a "stops.txt" file')
         sys.exit(1)
 
     stops = stops.drop(['stop_lon', 'stop_lat'], axis=1)
@@ -186,7 +186,7 @@ if uploaded_files != []:
     try:
         stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
     except NameError:
-        st.error('Please upload a polygon file named features.geojson')
+        st.error('Please upload a polygon file named "features.geojson"')
         sys.exit(1)
 
     try:

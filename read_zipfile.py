@@ -140,13 +140,13 @@ if uploaded_files != []:
 
     # Convert route_id to str
     try:
-        trips.route_id = trips.route_id.astype(str)
+        trips['route_id'] = trips['route_id'].apply(str)
     except NameError:
         st.error('Bitte lade die "trips.txt" Datei hoch')
         sys.exit(1)
     
     try:
-        routes.route_id = routes.route_id.astype(str)
+        routes['route_id'] = routes['route_id'].apply(str)
     except NameError:
         st.error('Bitte lade die "route.txt" Datei hoch')
         sys.exit(1)
