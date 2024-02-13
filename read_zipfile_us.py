@@ -457,7 +457,7 @@ if uploaded_files != []:
     avg_lat = polys.geometry.centroid.y.mean()    
 
     with col2:
-        st.subheader('Total Kilometer per area = {}'.format(round(table_poly['Miles per area'].map(float).sum(),1)))
+        st.subheader('Total miles per area = {}'.format(round(table_poly['Miles per area'].map(float).sum(),1)))
                     # Download data
 
         def get_table_download_link(df):
