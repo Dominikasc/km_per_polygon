@@ -349,7 +349,7 @@ if uploaded_files != []:
     @st.cache_data(ttl=180)
     def table_fun(try_this):
         table = try_this.pivot_table(['trips_per_year','km_in_poly','km_per_year','h_per_year'], index=['route_short_name', 'patternname', 'name'], aggfunc='sum').reset_index() # Added km_per_year and h_per_year
-        table.rename(columns = dict(route_short_name = 'Line', name = 'Area', patternname = 'Pattern',trips_per_year='Fahrten pro Jahr', km_in_poly = 'Kilometer im Gebiet', km_per_year = 'Kilometer im Jahr', h_per_year = 'Stunden im Jahr'), inplace=True)
+        table.rename(columns = dict(route_short_name = 'Line', name = 'Area', patternname = 'Pattern',trips_per_year='Trips per year', km_in_poly = 'Miles per area', km_per_year = 'Miles per year', h_per_year = 'Hours per year'), inplace=True)
         return table
 
     table = table_fun(try_this)
@@ -367,7 +367,7 @@ if uploaded_files != []:
     # --------------------------- APP -----------------------------------------------
     # -------------------------------------------------------------------------------
     # LAYING OUT THE TOP SECTION OF THE APP
-    st.header("Bus kilometer per Area (geografic boundary)")
+    st.header("Bus milage per area (geografic boundary)")
     # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
     col1, col2, col3= st.columns((1, 3 ,2)) #NEW
         
@@ -388,7 +388,7 @@ if uploaded_files != []:
         filter_polys = st.multiselect('Area', poly_names_list)
         filter_routes = st.multiselect('Line', lines_names_list)
         filter_patterns = st.multiselect('Pattern', patterns_names_list)
-        st.subheader('Pivot Dimensionen')
+        st.subheader('Pivot Dimensions')
         group_by = st.multiselect('Group by', ['Area', 'Line', 'Pattern'], default = ['Area', 'Line', 'Pattern'])
         
     if filter_polys == []:
@@ -410,15 +410,15 @@ if uploaded_files != []:
         ]
     
     try:
-        table_poly = table_poly.pivot_table(['Fahrten pro Jahr','Kilometer im Gebiet','Kilometer im Jahr','Stunden im Jahr'], index=group_by, aggfunc={'Fahrten pro Jahr': "sum", 'Kilometer im Gebiet': "sum",'Kilometer im Jahr':"sum",'Stunden im Jahr': "sum"}).reset_index() 
+        table_poly = table_poly.pivot_table(['Trips per year','Miles per area','Miles per year','Hours per year'], index=group_by, aggfunc={'Trips per year': "sum", 'Miles per area': "sum",'Miles per year':"sum",'Hours per year': "sum"}).reset_index() 
     except ValueError:
         st.error('Choose at least one value for grouping')
         sys.exit(1)
-    #table_poly = table_poly.pivot_table(['Fahrten pro Jahr','Kilometer im Gebiet','Kilometer im Jahr','Stunden im Jahr'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
-    table_poly['Fahrten pro Jahr'] = table_poly['Fahrten pro Jahr'].apply(lambda x: str(round(x, 2)))     
-    table_poly['Kilometer im Gebiet'] = table_poly['Kilometer im Gebiet'].apply(lambda x: str(round(x, 2)))     
-    table_poly['Kilometer im Jahr'] = table_poly['Kilometer im Jahr'].apply(lambda x: str(round(x, 2)))     
-    table_poly['Stunden im Jahr'] = table_poly['Stunden im Jahr'].apply(lambda x: str(round(x, 2)))     
+    #table_poly = table_poly.pivot_table(['Trips per year','Miles per area','Miles per year','Hours per year'], index=group_by, aggfunc='sum').reset_index() # Added km_per_year
+    table_poly['Trips per year'] = table_poly['Trips per year'].apply(lambda x: str(round(x, 2)))     
+    table_poly['Miles per area'] = table_poly['Miles per area'].apply(lambda x: str(round(x, 2)))     
+    table_poly['Miles per year'] = table_poly['Miles per year'].apply(lambda x: str(round(x, 2)))     
+    table_poly['Hours per year'] = table_poly['Hours per year'].apply(lambda x: str(round(x, 2)))     
 
                 
     # Filter polygons that passed the filter
@@ -457,7 +457,7 @@ if uploaded_files != []:
     avg_lat = polys.geometry.centroid.y.mean()    
 
     with col2:
-        st.subheader('Total Kilometer per area = {}'.format(round(table_poly['Kilometer im Gebiet'].map(float).sum(),1)))
+        st.subheader('Total Kilometer per area = {}'.format(round(table_poly['Miles per area'].map(float).sum(),1)))
                     # Download data
 
         def get_table_download_link(df):
@@ -486,14 +486,14 @@ if uploaded_files != []:
         ) #NEW
 
         gb.configure_column(
-            field="Fahrten pro Jahr",
+            field="Trips per year",
             header_name="Trips/year",
             width=100,
             tooltipField="Trips per year",
         ) #NEW
 
         gb.configure_column(
-            field="Kilometer im Gebiet",
+            field="Miles per area",
             header_name="Miles/Area",
             width=100,
             tooltipField="Miles per Area",
@@ -501,7 +501,7 @@ if uploaded_files != []:
         ) #NEW
 
         gb.configure_column(
-            field="Kilometer im Jahr",
+            field="Miles per year",
             header_name="Miles/year",
             width=100,
             tooltipField="Miles per year",
@@ -509,7 +509,7 @@ if uploaded_files != []:
         ) #NEW
 
         gb.configure_column(
-            field="Stunden im Jahr",
+            field="Hours per year",
             header_name="h/year",
             width=100,
             tooltipField="Hours per year",

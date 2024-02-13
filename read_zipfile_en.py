@@ -494,7 +494,7 @@ if uploaded_files != []:
         filter_polys = st.multiselect('Area', poly_names_list)
         filter_routes = st.multiselect('Line', lines_names_list)
         filter_patterns = st.multiselect('Pattern', patterns_names_list)
-        st.subheader('Pivot Dimensionen')
+        st.subheader('Pivot Dimensions')
         group_by = st.multiselect('Group by', ['Area', 'Line', 'Pattern'], default = ['Area', 'Line', 'Pattern'])
         
     if filter_polys == []:
