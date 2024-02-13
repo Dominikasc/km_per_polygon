@@ -53,8 +53,7 @@ if uploaded_files != []:
         # Parse the files of the GTFS I need
         if name=='routes.txt':
             routes = pd.read_csv(file)
-            if len(routes.route_short_name.unique()) == 1:
-                routes['route_short_name'] = routes['route_long_name']
+            routes['route_short_name'] = routes['route_short_name'].astype(str) + " " + routes['route_long_name'].astype(str)
                 
         elif name == 'trips.txt':
             trips = pd.read_csv(file)
