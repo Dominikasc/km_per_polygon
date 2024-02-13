@@ -138,19 +138,28 @@ if uploaded_files != []:
         st.error('Bitte lade die "shapes.txt" Datei hoch')
         sys.exit(1)
 
+    # Convert route_id to str
+    try:
+        trips.route_id = trips.route_id.astype(str)
+    except NameError:
+        st.error('Bitte lade die "trips.txt" Datei hoch')
+        sys.exit(1)
+    
+    try:
+        routes.route_id = routes.route_id.astype(str)
+    except NameError:
+        st.error('Bitte lade die "route.txt" Datei hoch')
+        sys.exit(1)
+
     # I need the route_id in stop_times
     try:
         stop_times = pd.merge(stop_times, trips, how='left')
     except NameError:
-        st.error('Bitte lade die "stop_times.txt" und "trips.txt" Datei hoch')
+        st.error('Bitte lade die "stop_times.txt" Datei hoch')
         sys.exit(1)
     
     # I need the route_short_name in trips
-    try:
-        trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
-    except NameError:
-        st.error('Bitte lade die "route.txt" Datei hoch')
-        sys.exit(1)
+    trips = pd.merge(trips, routes[['route_id', 'route_short_name']])
     
     #Replace route_id and get rid of route_id in trip_id
     trips['trip_id'] = trips.apply(lambda row: re.sub(r"[\([{})\]]", "", row.trip_id) , axis =1)
