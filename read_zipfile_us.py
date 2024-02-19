@@ -492,13 +492,6 @@ if uploaded_files != []:
         ) #NEW
 
         gb.configure_column(
-            field="Trips per year",
-            header_name="Trips/year",
-            width=100,
-            tooltipField="Trips per year",
-        ) #NEW
-
-        gb.configure_column(
             field="Miles per area",
             header_name="Miles/Area",
             width=100,
