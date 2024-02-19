@@ -469,11 +469,10 @@ if uploaded_files != []:
             href = f'<a href="data:file/csv;base64,{b64}">Export CSV file</a>'
             return href
         
-        table_poly_view = table_poly
         if filter_polys != []:
-            table_poly_view = table_poly_view.loc[:, table_poly_view.columns != table_poly_view['Trips per year']]
+            table_poly = table_poly.loc[:, table_poly.columns != table_poly['Trips per year']]
 
-        gb = GridOptionsBuilder.from_dataframe(table_poly_view) #NEW
+        gb = GridOptionsBuilder.from_dataframe(table_poly) #NEW
 
         gb.configure_default_column(
             resizable=True,
@@ -526,9 +525,9 @@ if uploaded_files != []:
 
         go = gb.build() #NEW
 
-        AgGrid(table_poly_view, gridOptions=go, theme="streamlit") #NEW
+        AgGrid(table_poly, gridOptions=go, theme="streamlit") #NEW
         #st.dataframe(table_poly, 1200, 600) #NEW
-        st.markdown(get_table_download_link(table_poly_view), unsafe_allow_html=True)
+        st.markdown(get_table_download_link(table_poly), unsafe_allow_html=True)
 
     with col3: 
         # CREATE THE MAP
