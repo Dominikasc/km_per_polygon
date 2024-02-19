@@ -483,6 +483,7 @@ if uploaded_files != []:
             filterable=True,
             sortable=True,
             editable=False,
+            width=100,
             )#NEW
         
         gb.configure_column( 
@@ -490,6 +491,13 @@ if uploaded_files != []:
             header_name="Line", 
             pinned='left',
         ) #NEW
+
+        #gb.configure_column(
+        #    field="Trips per year",
+        #    header_name="Trips/year",
+        #    width=100,
+        #    tooltipField="Trips per year",
+        #) #NEW
 
         gb.configure_column(
             field="Miles per area",
