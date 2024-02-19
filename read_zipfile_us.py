@@ -470,8 +470,8 @@ if uploaded_files != []:
             return href
         
         if filter_polys != []:
-            table_poly = table_poly
-      #      table_poly = table_poly.loc[:, table_poly.columns != table_poly['Trips per year']]
+            col = "Trips per year"
+            table_poly = table_poly.loc[:, table_poly.columns != col]
 
         gb = GridOptionsBuilder.from_dataframe(table_poly) #NEW
 
