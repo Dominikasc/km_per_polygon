@@ -469,8 +469,8 @@ if uploaded_files != []:
             href = f'<a href="data:file/csv;base64,{b64}">Export CSV file</a>'
             return href
         
-        if filter_polys != []:
-            table_poly = table_poly.loc[:, table_poly.columns != table_poly['Trips per year']]
+      #  if filter_polys != []:
+      #      table_poly = table_poly.loc[:, table_poly.columns != table_poly['Trips per year']]
 
         gb = GridOptionsBuilder.from_dataframe(table_poly) #NEW
 
