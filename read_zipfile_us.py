@@ -470,7 +470,7 @@ if uploaded_files != []:
             return href
         
         table_poly_view = table_poly
-        if table['Area'].isin(filter_polys):
+        if 'Area' in group_by:
             table_poly_view = table_poly
         else:
             col = "Trips per year"
