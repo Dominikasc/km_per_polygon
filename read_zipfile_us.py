@@ -471,7 +471,7 @@ if uploaded_files != []:
         
         table_poly_view = table_poly
         if filter_polys != []:
-            table_poly_view = table_poly.loc[:, table_poly.columns != table_poly['Trips per year']]
+            table_poly_view = table_poly_view.loc[:, table_poly_view.columns != table_poly_view['Trips per year']]
 
         gb = GridOptionsBuilder.from_dataframe(table_poly_view) #NEW
 
