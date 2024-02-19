@@ -470,7 +470,7 @@ if uploaded_files != []:
             return href
         
         table_poly_view = table_poly
-        if filter_polys != []:
+        if filter_polys == []:
             col = "Trips per year"
             table_poly_view = table_poly_view.loc[:, table_poly_view.columns != col]
 
