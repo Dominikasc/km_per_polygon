@@ -107,7 +107,8 @@ if uploaded_files != []:
         
         return epsg_code
 
-   def get_pattern_name(tripid):
+    
+    def get_pattern_name(tripid):
         mylist = re.split('-', tripid)
         try:
             name = mylist[mylist.index('OB')-1]
