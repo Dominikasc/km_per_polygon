@@ -109,7 +109,6 @@ if uploaded_files != []:
 
    def get_pattern_name(tripid):
         mylist = re.split('-', tripid)
-
         try:
             name = mylist[mylist.index('OB')-1]
         except ValueError:
@@ -229,7 +228,7 @@ if uploaded_files != []:
     #min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x) # removed because it reduces the avg km/h
     
     # Split out patternname from trip_id
-    min_per_shape['patternname'] = min_per_shape['trip_id'].apply(lambda x:get_pattern_name()) #new
+    min_per_shape['patternname'] = min_per_shape['trip_id'].apply(lambda x:get_pattern_name(x)) #new
 
     min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.departure_m)/(1000/60)
     min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id','patternname']).aggregate({'trip_id':'count','days_per_year':'max','departure_m':'sum','poly_kmh':'mean','diff_kmh':'mean'}).reset_index() #update
