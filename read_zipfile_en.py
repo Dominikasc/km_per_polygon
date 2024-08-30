@@ -109,8 +109,13 @@ if uploaded_files != []:
     def splitloc(tripid):
         loc = 2
         if tripid.startswith('Service'):
-            loc = 3
-        return loc 
+            mylist = re.split('-', tripid)
+
+            try:
+                loc = mylist.index('IB')-1
+            except ValueError:
+                loc = mylist.index('OB')-1
+        return loc
     
     # Add the number of days per year 
 
