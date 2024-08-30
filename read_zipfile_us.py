@@ -106,16 +106,13 @@ if uploaded_files != []:
         
         return epsg_code
 
-    def splitloc(tripid):
-        loc = 2
-        if tripid.startswith('Service'):
-            mylist = re.split('-', tripid)
-
-            try:
-                loc = mylist.index('IB')-1
-            except ValueError:
-                loc = mylist.index('OB')-1
-        return loc
+    def get_pattern_name(tripid):
+        mylist = re.split('-', tripid)
+        try:
+            name = mylist[mylist.index('OB')-1]
+        except ValueError:
+            name = mylist[mylist.index('IB')-1]
+        return name
     
     # Add the number of days per year 
 
@@ -230,11 +227,8 @@ if uploaded_files != []:
     min_per_shape = stop_times.groupby(['trip_id','shape_id','name','route_id','service_id','direction_id']).aggregate({'departure_m':lambda x: max(x)-min(x),'shape_dist_traveled':lambda x: max(x)-min(x),'days_per_year':'max','diff_kmh':'mean'}).reset_index()
     #min_per_shape['departure_m'] = min_per_shape.departure_m.apply(lambda x: 0.5 if x == 0 else x) # removed because it reduces the avg km/h
 
-    # Get split location for pattern
-    loc = splitloc(min_per_shape['trip_id'][1])
-
     # Split out patternname from trip_id
-    min_per_shape['patternname'] = min_per_shape['trip_id'].str.split('-').apply(lambda x:x[loc]) #new
+    min_per_shape['patternname'] = min_per_shape['trip_id'].apply(lambda x:get_pattern_name(x)) #new
 
     min_per_shape['poly_kmh'] = (min_per_shape.shape_dist_traveled/min_per_shape.departure_m)/(1000/60)
     min_per_shape1 = min_per_shape.groupby(['shape_id','name','route_id','service_id','direction_id','patternname']).aggregate({'trip_id':'count','days_per_year':'max','departure_m':'sum','poly_kmh':'mean','diff_kmh':'mean'}).reset_index() #update
@@ -264,7 +258,7 @@ if uploaded_files != []:
 
     # Get the patters from Remix trip_id
     # Number of trips per shape
-    trips['patternname'] =  trips['trip_id'].str.split('-').apply(lambda x:x[loc]) #add patternname per trip
+    trips['patternname'] =  trips['trip_id'].apply(lambda x:get_pattern_name(x)) #add patternname per trip
     shapes.crs = {'init':'epsg:4326'} 
     shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326 # CRS.from_epsg() --> deprecation warning
 
