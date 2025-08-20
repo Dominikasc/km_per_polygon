@@ -1,7 +1,7 @@
 geopandas==0.12.2
 pandas==1.5.3
 streamlit>=1.48.1
-pydeck==0.6.1
+pydeck==0.9.1
 Shapely==1.8.4
 rtree==1.0.1
 numpy>=1.24.3
