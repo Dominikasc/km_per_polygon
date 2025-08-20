@@ -36,7 +36,7 @@ import datetime
 import utm
 import re #new
 import sys #new
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode #NEW
+# from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode #NEW
 
 
 #from glob import iglob
