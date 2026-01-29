@@ -13,32 +13,13 @@ import pandas as pd
 import pydeck as pdk
 import geopandas as gpd
 from geopandas import GeoDataFrame 
-import math
 import numpy as np
 
-import shapely 
-from shapely.geometry import LineString
-from shapely.geometry import Point 
-from shapely import ops 
+from shapely.geometry import LineString, Point
 
-import pyproj
-
-import itertools
-import base64
-import glob 
-import string 
-import rtree 
-from string import ascii_uppercase 
-import datetime 
-import utm #new
-import re #new
-import sys #new
-from st_aggrid import AgGrid, GridOptionsBuilder #NEW
-
-
-
-#from glob import iglob
-#import glob
+import utm
+import re
+import sys
 
 st.set_page_config(layout="wide")
 st.sidebar.header('Data Upload')
@@ -53,7 +34,14 @@ if uploaded_files != []:
         # Parse the files of the GTFS I need
         if name=='routes.txt':
             routes = pd.read_csv(file)
-            routes['route_short_name'] = routes['route_short_name'].astype(str) + " " + routes['route_long_name'].astype(str)
+            # Fill NaN values with empty string
+            routes['route_short_name'] = routes['route_short_name'].fillna('')
+            routes['route_long_name'] = routes['route_long_name'].fillna('')
+            # Combine names, strip any extra spaces that might occur when one name is empty
+            routes['route_short_name'] = routes.apply(
+                lambda x: f"{x['route_short_name']} {x['route_long_name']}".strip(), 
+                axis=1
+            )
 
         elif name == 'trips.txt':
             trips = pd.read_csv(file)
@@ -185,7 +173,7 @@ if uploaded_files != []:
 
     # Get polygon by stop
     try:
-        stops_poly = gpd.sjoin(stops_gdf,polys,how="left",op="intersects")
+        stops_poly = gpd.sjoin(stops_gdf,polys,how="left",predicate="intersects")
     except NameError:
         st.error('Please upload a polygon file named "features.geojson"')
         sys.exit(1)
@@ -208,7 +196,7 @@ if uploaded_files != []:
     stop_times['diff_kmh'] = (stop_times.diff_dist/stop_times.diff_min)/(1000/60)
     stop_times = stop_times.replace([np.inf, -np.inf],np.nan)    
 
-    @st.cache_data(ttl=180)
+    @st.cache_data
     def shapes_fun(_shapes):
         # I need the start and end coordinate in shapes
 
@@ -268,7 +256,7 @@ if uploaded_files != []:
     #intersection['km_in_poly'] = intersection.geometry.to_crs(localcrs).length/1000  # changed from 32632 to 3587
     #intersection['miles_in_poly'] = intersection['km_in_poly']*0.621371
     
-    @st.cache_data(ttl=180)
+    @st.cache_data
     def intersection_fun(_shapes,_polys,localcrs):
         # new test to find intersections
         intersection = gpd.overlay(shapes, polys, how='intersection').reset_index(drop=False)
@@ -372,7 +360,7 @@ if uploaded_files != []:
     shapes.crs = {'init':'epsg:4326'} 
     shapes['length_m'] = shapes.geometry.to_crs(epsg=3587).length # Changed from 4326 # CRS.from_epsg() --> deprecation warning
 
-    @st.cache_data(ttl=180)
+    @st.cache_data
     def try_this_fun(trips,_shapes,calendar,stop_times,routes,min_per_shape2):
         trips_per_shape0 = trips.pivot_table('trip_id', index=['route_id', 'shape_id','direction_id','service_id','patternname'], aggfunc='count').reset_index()
         trips_per_shape0.rename(columns = dict(trip_id = 'ntrips'), inplace=True)   
@@ -450,7 +438,7 @@ if uploaded_files != []:
     # This is what I need to draw the map
     # I have the fields to filter by route and county
     
-    @st.cache_data(ttl=180)
+    @st.cache_data
     def table_fun(try_this):
         table = try_this.pivot_table(['trips_per_year','km_in_poly','km_per_year','h_per_year'], index=['route_short_name', 'patternname', 'name'], aggfunc='sum').reset_index() # Added km_per_year and h_per_year
         table.rename(columns = dict(route_short_name = 'Line', name = 'Area', patternname = 'Pattern',trips_per_year='Trips per year', km_in_poly = 'Kilometer per area', km_per_year = 'Kilometer per year', h_per_year = 'Hours per year'), inplace=True)
@@ -458,7 +446,7 @@ if uploaded_files != []:
 
     table = table_fun(try_this)
 
-    @st.cache_data(ttl=180)
+    @st.cache_data
     def gdf_intersections_fun(try_this):
         gdf_intersections = gpd.GeoDataFrame(data = try_this[['route_short_name', 'name', 'patternname','color']], geometry = try_this.geometry)
         gdf_intersections.rename(columns = dict(route_short_name = 'Line', name = 'Area', patternname = 'Pattern', color = 'Color'), inplace=True)
@@ -563,73 +551,97 @@ if uploaded_files != []:
     with col2:
         st.subheader('Total Kilometer per area = {}'.format(round(table_poly['Kilometer per area'].map(float).sum(),1)))
                     # Download data
-
-        def get_table_download_link(df):
-            """Generates a link allowing the data in a given panda dataframe to be downloaded
-            in:  dataframe
-            out: href string
-            """
-            csv = df.to_csv(index=False)
-            b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
-            href = f'<a href="data:file/csv;base64,{b64}">Export CSV file</a>'
-            return href
+        
         
         table_poly_view = table_poly
-        if 'Area' in group_by:
-            table_poly_view = table_poly
-        else:
-            col = "Trips per year"
-            table_poly_view = table_poly_view.loc[:, table_poly_view.columns != col]
+        table_poly_view = pd.DataFrame(table_poly_view).reset_index(drop=True)
 
-        gb = GridOptionsBuilder.from_dataframe(table_poly_view) #NEW
+        # Convert all numeric columns to float
+        numeric_cols = ['Kilometer per area', 'Kilometer per year', 'Hours per year']
+        for col in numeric_cols:
+            if col in table_poly_view.columns:
+                table_poly_view[col] = pd.to_numeric(table_poly_view[col].str.replace(',', '.'), errors='coerce')
 
-        gb.configure_default_column(
-            resizable=True,
-            filterable=True,
-            sortable=True,
-            editable=False,
-            )#NEW
-        
-        gb.configure_column( 
-            field="Line", 
-            header_name="Line", 
-            pinned='left',
-        ) #NEW
+        # Ensure all columns are in the correct format
+        table_poly_view = table_poly_view.astype({
+            'Line': str,
+            'Area': str,
+            'Kilometer per area': float,
+            'Kilometer per year': float,
+            'Hours per year': float
+        })
 
-        gb.configure_column(
-            field="Kilometer per area",
-            header_name="Km/Area",
-            width=100,
-            tooltipField="Kilometer per Area",
-            type=["numericColumn"],
-        ) #NEW
+        totals_row = pd.DataFrame([{
+            'Line': '',
+            'Area': '',
+            'Pattern': '',
+            'Trips per year': table_poly_view['Trips per year'].astype(float).sum(),
+            'Kilometer per area': table_poly_view['Kilometer per area'].astype(float).sum(),
+            'Kilometer per year': table_poly_view['Kilometer per year'].astype(float).sum(),
+            'Hours per year': table_poly_view['Hours per year'].astype(float).sum()
+        }])
 
-        gb.configure_column(
-            field="Kilometer per year",
-            header_name="Km/year",
-            width=100,
-            tooltipField="Kilometer per year",
-            type=["numericColumn"],
-        ) #NEW
 
-        gb.configure_column(
-            field="Hours per year",
-            header_name="h/year",
-            width=100,
-            tooltipField="Hours per year",
-            type=["numericColumn"],
-        ) #NEW
-        
-        #gb.configure_side_bar() #NEW
-        gb.configure_grid_options(
-            tooltipShowDelay=0
-            )#NEW
+        # Combine the original data with the totals row
+        table_poly_view_with_totals = pd.concat([table_poly_view, totals_row], ignore_index=True)
 
-        go = gb.build() #NEW
+        # Define styling function for the sum row
+        def highlight_last_row(row):
+            if row.name == len(table_poly_view_with_totals) - 1:
+                return ['background-color: #09417a; font-weight: bold'] * len(row)
+            return [''] * len(row)
 
-        AgGrid(table_poly_view, gridOptions=go, theme="streamlit") #NEW
-        #st.dataframe(table_poly, 1200, 600) #NEW
-        st.markdown(get_table_download_link(table_poly_view), unsafe_allow_html=True)
+        # Apply styling and display with st.dataframe
+        st.dataframe(
+            table_poly_view_with_totals.style.apply(highlight_last_row, axis=1),
+            column_config={
+                "Line": st.column_config.Column(
+                    "Line",
+                    width="dynamic"
+                ),
+                "Area": st.column_config.Column(
+                    "Area",
+                    width="dynamic"
+                ),
+                "Pattern": st.column_config.Column(
+                    "Pattern",
+                    width="dynamic"
+                ),
+                "Trips per year": st.column_config.NumberColumn(
+                    "Trips/Year",
+                    format="%.2f",
+                    width="dynamic"
+                ),
+                "Kilometer per area": st.column_config.NumberColumn(
+                    "Km/Area",
+                    format="%.2f",
+                    width="dynamic"
+                ),
+                "Kilometer per year": st.column_config.NumberColumn(
+                    "Km/Year",
+                    format="%.2f",
+                    width="dynamic"
+                ),
+                "Hours per year": st.column_config.NumberColumn(
+                    "Hours/Year",
+                    format="%.2f",
+                    width="dynamic"
+                ),
+            },
+            hide_index=True,
+            use_container_width=True
+        )
+
+        # First convert DataFrame to CSV string
+        csv_data = table_poly_view.to_csv(sep=';', index=False).encode('utf-8-sig')
+
+        # Then use the CSV string in the download button
+        st.download_button(
+            label="Export CSV file",
+            data=csv_data,
+            file_name="data.csv",
+            mime="text/csv"
+        )
 
     with col3: 
         # CREATE THE MAP
