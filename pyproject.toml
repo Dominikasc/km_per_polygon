@@ -1,0 +1,15 @@
+[project]
+name = "km-per-polygon"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "geopandas>=0.13",
+    "pandas>=2.1",
+    "streamlit>=1.48.1",
+    "pydeck==0.9.1",
+    "shapely>=2.0",
+    "numpy>=1.26",
+    "utm==0.7.0",
+]
