@@ -1,7 +1,7 @@
 streamlit>=1.48.1
 geopandas>=0.13
 pandas>=2.1
-numpy>=1.26
+numpy>=1.26,<2
 shapely>=2.0
 pydeck==0.9.1
 utm==0.7.0

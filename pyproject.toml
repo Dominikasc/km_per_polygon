@@ -10,6 +10,6 @@ dependencies = [
     "streamlit>=1.48.1",
     "pydeck==0.9.1",
     "shapely>=2.0",
-    "numpy>=1.26",
+    "numpy>=1.26,<2",
     "utm==0.7.0",
 ]
