@@ -16,6 +16,7 @@ import pydeck as pdk
 import geopandas as gpd
 from geopandas import GeoDataFrame 
 import numpy as np
+import json
 
 from shapely.geometry import LineString, Point
 from shapely.geometry import Point 
@@ -438,7 +439,8 @@ if uploaded_files != []:
         (gdf_intersections['Linie'].isin(filter_routes))&
         (gdf_intersections['Gebiet'].isin(filter_polys))&
         (gdf_intersections['Variante'].isin(filter_patterns))
-        ].__geo_interface__
+        ]
+    line_intersections = json.loads(line_intersections.to_json())
     
     # Filter the shapes that passed the routes filters
     aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
@@ -616,6 +618,8 @@ if uploaded_files != []:
     with col3: 
         # CREATE THE MAP
         st.subheader('Map')
+        filtered = json.loads(filtered.to_json())
+        shapes_filtered = json.loads(shapes_filtered.to_json())
         st.pydeck_chart(pdk.Deck(
             map_style="mapbox://styles/mapbox/light-v9",
             # api_keys =  MAPBOX_API_KEY,
