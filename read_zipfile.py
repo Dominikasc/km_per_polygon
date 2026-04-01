@@ -10,8 +10,6 @@ Modified on Mon Jan 29 2023
 #import os
 #os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 
-import json
-
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
@@ -19,31 +17,11 @@ import geopandas as gpd
 from geopandas import GeoDataFrame 
 import numpy as np
 
-from shapely.geometry import LineString, Point, mapping
+from shapely.geometry import LineString, Point
+from shapely.geometry import Point 
 import utm
 import re #new
 import sys #new
-
-
-def geodataframe_to_geojson_feature_collection(gdf: gpd.GeoDataFrame) -> dict:
-    """Serialize GeoDataFrame to a GeoJSON FeatureCollection dict for pydeck.
-
-    Avoids GeoPandas ``__geo_interface__`` / ``iterfeatures``, which fail under
-    NumPy 2.x (``np.array(geometry, copy=False)`` cannot always avoid a copy).
-    """
-    if gdf.empty:
-        return {"type": "FeatureCollection", "features": []}
-    geom_col = gdf.geometry.name
-    props_json = gdf.drop(columns=geom_col).to_json(orient="records", date_format="iso")
-    props_list = json.loads(props_json)
-    features = []
-    for props, geom in zip(props_list, gdf.geometry):
-        features.append({
-            "type": "Feature",
-            "geometry": mapping(geom),
-            "properties": props,
-        })
-    return {"type": "FeatureCollection", "features": features}
 
 
 st.set_page_config(layout="wide")
@@ -450,21 +428,17 @@ if uploaded_files != []:
     # This is what I need to select the polygons that passed the route and county filters
     route_polys = gpd.GeoDataFrame(data=intersection2[['route_short_name', 'name']], geometry=intersection2.geometry)
     
-    filtered = geodataframe_to_geojson_feature_collection(
-        route_polys.loc[
-            (route_polys['name'].isin(filter_polys))&
-            (route_polys.route_short_name.isin(filter_routes))
+    filtered = route_polys.loc[
+        (route_polys['name'].isin(filter_polys))&
+        (route_polys.route_short_name.isin(filter_routes))
         ]
-    )
-
+        
     # Filter line intersections that passed the filters
-    line_intersections = geodataframe_to_geojson_feature_collection(
-        gdf_intersections.loc[
-            (gdf_intersections['Linie'].isin(filter_routes))&
-            (gdf_intersections['Gebiet'].isin(filter_polys))&
-            (gdf_intersections['Variante'].isin(filter_patterns))
-        ]
-    )
+    line_intersections = gdf_intersections.loc[
+        (gdf_intersections['Linie'].isin(filter_routes))&
+        (gdf_intersections['Gebiet'].isin(filter_polys))&
+        (gdf_intersections['Variante'].isin(filter_patterns))
+        ].__geo_interface__
     
     # Filter the shapes that passed the routes filters
     aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
@@ -473,8 +447,7 @@ if uploaded_files != []:
     shapes_filtered = pd.merge(shapes_filtered, try_this[['shape_id','route_short_name','color', 'patternname']], how='left')
     shapes_filtered = gpd.GeoDataFrame(data = shapes_filtered.drop('geometry', axis=1), geometry=shapes_filtered.geometry)
     shapes_filtered = shapes_filtered.loc[shapes_filtered.route_short_name.isin(filter_routes)]
-    shapes_filtered = geodataframe_to_geojson_feature_collection(shapes_filtered)
-
+        
     # Calculate the center
     avg_lon = polys.geometry.centroid.x.mean()
     avg_lat = polys.geometry.centroid.y.mean()    
