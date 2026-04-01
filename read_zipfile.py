@@ -445,10 +445,11 @@ if uploaded_files != []:
     # Filter the shapes that passed the routes filters
     aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
     aux = pd.merge(aux, routes[['route_id', 'route_short_name']], how='left')
-    shapes_filtered = pd.merge(shapes ,aux, how='left')
+    shapes_filtered = pd.merge(shapes, aux, how='left')
     shapes_filtered = pd.merge(shapes_filtered, try_this[['shape_id','route_short_name','color', 'patternname']], how='left')
-    shapes_filtered = gpd.GeoDataFrame(data = shapes_filtered.drop('geometry', axis=1), geometry=shapes_filtered.geometry)
+    shapes_filtered = gpd.GeoDataFrame(data=shapes_filtered.drop('geometry', axis=1), geometry=shapes_filtered.geometry)
     shapes_filtered = shapes_filtered.loc[shapes_filtered.route_short_name.isin(filter_routes)]
+    shapes_filtered = json.loads(shapes_filtered.to_json())
         
     # Calculate the center
     avg_lon = polys.geometry.centroid.x.mean()
@@ -619,7 +620,6 @@ if uploaded_files != []:
         # CREATE THE MAP
         st.subheader('Map')
         filtered = json.loads(filtered.to_json())
-        shapes_filtered = json.loads(shapes_filtered.to_json())
         st.pydeck_chart(pdk.Deck(
             map_style="mapbox://styles/mapbox/light-v9",
             # api_keys =  MAPBOX_API_KEY,
