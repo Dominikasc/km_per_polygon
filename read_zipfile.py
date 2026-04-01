@@ -18,9 +18,57 @@ from geopandas import GeoDataFrame
 import numpy as np
 import json
 
-from shapely.geometry import LineString, Point
-from shapely.geometry import Point 
+from shapely.geometry import LineString, Point, mapping
+from shapely.geometry.base import BaseGeometry
 import utm
+
+
+def _convert_to_serializable(obj):
+    """Recursively convert numpy types to native Python types."""
+    if isinstance(obj, dict):
+        return {k: _convert_to_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_convert_to_serializable(v) for v in obj]
+    elif isinstance(obj, np.ndarray):
+        return [_convert_to_serializable(v) for v in obj.tolist()]
+    elif isinstance(obj, (np.integer,)):
+        return int(obj)
+    elif isinstance(obj, (np.floating,)):
+        return float(obj)
+    else:
+        return obj
+
+
+def geojson_from_gdf(gdf):
+    """Convert GeoDataFrame to GeoJSON dict, handling Shapely 2.x + NumPy types."""
+    features = []
+    for idx, row in gdf.iterrows():
+        geom = row.geometry
+        props = {}
+        for col in gdf.columns:
+            if col == 'geometry':
+                continue
+            val = row[col]
+            if isinstance(val, BaseGeometry):
+                continue
+            if isinstance(val, (list, np.ndarray)):
+                props[col] = [int(v) if isinstance(v, (np.integer, int)) else float(v) if isinstance(v, (np.floating, float)) else v for v in val]
+            elif isinstance(val, (np.integer,)):
+                props[col] = int(val)
+            elif isinstance(val, (np.floating,)):
+                props[col] = float(val)
+            elif pd.isna(val):
+                props[col] = None
+            else:
+                props[col] = val
+        geom_dict = mapping(geom)
+        geom_dict = _convert_to_serializable(geom_dict)
+        features.append({
+            "type": "Feature",
+            "geometry": geom_dict,
+            "properties": props
+        })
+    return {"type": "FeatureCollection", "features": features}
 import re #new
 import sys #new
 
@@ -440,7 +488,7 @@ if uploaded_files != []:
         (gdf_intersections['Gebiet'].isin(filter_polys))&
         (gdf_intersections['Variante'].isin(filter_patterns))
         ]
-    line_intersections = json.loads(line_intersections.to_json())
+    line_intersections = geojson_from_gdf(line_intersections)
     
     # Filter the shapes that passed the routes filters
     aux = trips.drop_duplicates(subset=['route_id', 'shape_id'])
@@ -449,7 +497,7 @@ if uploaded_files != []:
     shapes_filtered = pd.merge(shapes_filtered, try_this[['shape_id','route_short_name','color', 'patternname']], how='left')
     shapes_filtered = gpd.GeoDataFrame(data=shapes_filtered.drop('geometry', axis=1), geometry=shapes_filtered.geometry)
     shapes_filtered = shapes_filtered.loc[shapes_filtered.route_short_name.isin(filter_routes)]
-    shapes_filtered = json.loads(shapes_filtered.to_json())
+    shapes_filtered = geojson_from_gdf(shapes_filtered)
         
     # Calculate the center
     avg_lon = polys.geometry.centroid.x.mean()
@@ -619,7 +667,7 @@ if uploaded_files != []:
     with col3: 
         # CREATE THE MAP
         st.subheader('Map')
-        filtered = json.loads(filtered.to_json())
+        filtered = geojson_from_gdf(filtered)
         st.pydeck_chart(pdk.Deck(
             map_style="mapbox://styles/mapbox/light-v9",
             # api_keys =  MAPBOX_API_KEY,
